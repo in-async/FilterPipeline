@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard1.0;net45</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Authors>inasync</Authors>
+    <Description></Description>
+    <PackageProjectUrl>https://github.com/in-async/FilterPipelines</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/in-async/FilterPipelines/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageTags>library</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+</Project>

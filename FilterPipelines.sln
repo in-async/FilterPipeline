@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inasync.FilterPipelines", "src\Inasync.FilterPipelines\Inasync.FilterPipelines.csproj", "{A5B63B40-8299-4ED8-A8F1-6D0C5C783B67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inasync.FilterPipelines.Tests", "tests\Inasync.FilterPipelines.Tests\Inasync.FilterPipelines.Tests.csproj", "{3D1DDD13-DB0B-4B08-9F7B-58E6EC8371D0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A0233B3C-3E49-44F3-AE5B-5D8831E0C6DC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{930C441A-5ACD-4E37-AC51-FC2CEA0136AD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1F7120E9-7E58-4541-B7C4-5790A2FC1343}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		appveyor.yml = appveyor.yml
+		Directory.Build.props = Directory.Build.props
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A5B63B40-8299-4ED8-A8F1-6D0C5C783B67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5B63B40-8299-4ED8-A8F1-6D0C5C783B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5B63B40-8299-4ED8-A8F1-6D0C5C783B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5B63B40-8299-4ED8-A8F1-6D0C5C783B67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D1DDD13-DB0B-4B08-9F7B-58E6EC8371D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D1DDD13-DB0B-4B08-9F7B-58E6EC8371D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D1DDD13-DB0B-4B08-9F7B-58E6EC8371D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D1DDD13-DB0B-4B08-9F7B-58E6EC8371D0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A5B63B40-8299-4ED8-A8F1-6D0C5C783B67} = {A0233B3C-3E49-44F3-AE5B-5D8831E0C6DC}
+		{3D1DDD13-DB0B-4B08-9F7B-58E6EC8371D0} = {930C441A-5ACD-4E37-AC51-FC2CEA0136AD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8C876EE-38E0-437C-8CA4-66126516132F}
+	EndGlobalSection
+EndGlobal
