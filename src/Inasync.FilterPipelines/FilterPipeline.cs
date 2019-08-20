@@ -44,7 +44,7 @@ namespace Inasync.FilterPipelines {
 
             Func<TContext, Task<Func<T, bool>>> pipeline = _ => Task.FromResult(PredicateFilter<T, TContext>.NullFilter);
             foreach (var filter in filters.Reverse()) {
-                pipeline = pipeline.Wrap((context, next) => filter(context, () => next(context)));
+                pipeline = pipeline.Wear(next => context => filter(context, () => next(context)));
             }
 
             return pipeline;
@@ -83,7 +83,7 @@ namespace Inasync.FilterPipelines {
 
             Func<TContext, Task<SequenceFilterFunc<T>>> pipeline = _ => Task.FromResult(SequenceFilter<T, TContext>.NullFilter);
             foreach (var filter in filters.Reverse()) {
-                pipeline = pipeline.Wrap((context, next) => filter(context, () => next(context)));
+                pipeline = pipeline.Wear(next => context => filter(context, () => next(context)));
             }
 
             return pipeline;
