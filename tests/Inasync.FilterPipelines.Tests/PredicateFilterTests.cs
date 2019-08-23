@@ -31,7 +31,7 @@ namespace Inasync.FilterPipelines.Tests {
                 var context = new DummyContext();
 
                 DummyEntity actualNextEntity = default;
-                Func<DummyContext, Task<Func<DummyEntity, bool>>> next = ctx => Task.FromResult<Func<DummyEntity, bool>>(x => {
+                Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>> next = ctx => Task.FromResult<PredicateFilterFunc<DummyEntity>>(x => {
                     actualNextEntity = x;
                     return nextResult;
                 });
@@ -59,12 +59,12 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public void Create() {
-            Func<DummyEntity, bool> nextFunc = _ => true;
+            PredicateFilterFunc<DummyEntity> nextFunc = _ => true;
 
-            Action TestCase(int testNumber, bool cancelled, Func<DummyEntity, bool> expected) => () => {
+            Action TestCase(int testNumber, bool cancelled, PredicateFilterFunc<DummyEntity> expected) => () => {
                 var filter = new DummyPredicateFilter(cancelled);
                 var context = new DummyContext();
-                Func<DummyContext, Task<Func<DummyEntity, bool>>> next = _ => Task.FromResult(nextFunc);
+                Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>> next = _ => Task.FromResult(nextFunc);
 
                 new TestCaseRunner($"No.{testNumber}")
                     .Run(() => filter.Middleware(next)(context))
@@ -91,7 +91,7 @@ namespace Inasync.FilterPipelines.Tests {
             public DummyContext ActualCreateContext { get; private set; }
             public DummyEntity ActualEntity { get; private set; }
 
-            protected override Func<DummyEntity, bool> Create(DummyContext context, ref bool cancelled) {
+            protected override PredicateFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
                 ActualCreateContext = context;
                 cancelled = _cancelled;
 
@@ -107,7 +107,7 @@ namespace Inasync.FilterPipelines.Tests {
 
             public DummyPredicateFilter(bool cancelled) => _cancelled = cancelled;
 
-            protected override Func<DummyEntity, bool> Create(DummyContext context, ref bool cancelled) {
+            protected override PredicateFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
                 cancelled = _cancelled;
                 return base.Create(context, ref cancelled);
             }

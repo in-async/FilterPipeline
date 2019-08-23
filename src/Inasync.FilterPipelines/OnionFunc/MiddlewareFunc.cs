@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Inasync.OnionFunc {
+namespace Inasync {
 
     /// <summary>
     /// ミドルウェアで定義されている処理を組み込んだ新しいパイプライン関数を作成します。

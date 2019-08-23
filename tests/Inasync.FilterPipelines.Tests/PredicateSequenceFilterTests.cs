@@ -58,13 +58,13 @@ namespace Inasync.FilterPipelines.Tests {
         #region Helpers
 
         private sealed class SpyPredicateFilterCreator {
-            private readonly Func<DummyEntity, bool> _predicate;
+            private readonly PredicateFilterFunc<DummyEntity> _predicate;
 
-            public SpyPredicateFilterCreator(Func<DummyEntity, bool> predicate) => _predicate = predicate;
+            public SpyPredicateFilterCreator(PredicateFilterFunc<DummyEntity> predicate) => _predicate = predicate;
 
             public DummyContext ActualContext { get; private set; }
 
-            public Func<DummyContext, Task<Func<DummyEntity, bool>>> Invoke => context => {
+            public Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>> Invoke => context => {
                 ActualContext = context;
 
                 return Task.FromResult(_predicate);

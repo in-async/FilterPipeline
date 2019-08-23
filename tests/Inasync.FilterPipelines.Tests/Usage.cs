@@ -9,7 +9,7 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public async Task Usage_Readme() {
-            Func<object, Task<Func<int, bool>>> pipeline = FilterPipeline.Build(new PredicateFilterMiddleware<int, object>[]{
+            Func<object, Task<PredicateFilterFunc<int>>> pipeline = FilterPipeline.Build(new MiddlewareFunc<object, Task<PredicateFilterFunc<int>>>[]{
                 next => async context => {
                     var nextFunc = await next(context);
                     return num => (num % 4 == 0) && nextFunc(num);

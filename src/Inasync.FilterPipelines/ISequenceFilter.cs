@@ -15,7 +15,14 @@ namespace Inasync.FilterPipelines {
         Func<TContext, Task<SequenceFilterFunc<T>>> Middleware(Func<TContext, Task<SequenceFilterFunc<T>>> next);
     }
 
-    public delegate Func<TContext, Task<SequenceFilterFunc<T>>> SequenceFilterMiddleware<T, TContext>(Func<TContext, Task<SequenceFilterFunc<T>>> next);
+    public static class SequenceFilterExtensions {
+
+        public static MiddlewareFunc<TContext, Task<SequenceFilterFunc<T>>> ToMiddleware<T, TContext>(this ISequenceFilter<T, TContext> filter) {
+            if (filter == null) { throw new ArgumentNullException(nameof(filter)); }
+
+            return new MiddlewareFunc<TContext, Task<SequenceFilterFunc<T>>>(filter.Middleware);
+        }
+    }
 
     /// <summary>
     /// <typeparamref name="T"/> のシーケンスをフィルター処理するデリゲート。

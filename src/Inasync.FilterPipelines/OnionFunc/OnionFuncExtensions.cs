@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Inasync.OnionFunc {
+namespace Inasync {
 
     /// <summary>
     /// <see cref="Func{T, TResult}"/> を他の <see cref="Func{T, TResult}"/> でラップしてパイプライン化する為のヘルパークラス。

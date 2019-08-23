@@ -13,9 +13,9 @@ namespace Inasync.FilterPipelines.Tests {
         [TestMethod]
         public void Build_PredicateFilters_Null() {
             //TestRun("by interfaces", () => FilterPipeline.Build((SpyPredicateFilter[])null));
-            TestRun("by delegates", () => FilterPipeline.Build((PredicateFilterMiddleware<DummyEntity, DummyContext>[])null));
+            TestRun("by delegates", () => FilterPipeline.Build((MiddlewareFunc<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>[])null));
 
-            void TestRun(string desc, Func<Func<DummyContext, Task<Func<DummyEntity, bool>>>> targetCode) => new TestCaseRunner()
+            void TestRun(string desc, Func<Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
                 .Run(targetCode)
                 .Verify((actual, _) => { }, typeof(ArgumentNullException));
         }
@@ -23,9 +23,9 @@ namespace Inasync.FilterPipelines.Tests {
         [TestMethod]
         public void Build_PredicateFilters_Empty() {
             //TestRun("by interfaces", () => FilterPipeline.Build(new SpyPredicateFilter[0]));
-            TestRun("by delegates", () => FilterPipeline.Build(new PredicateFilterMiddleware<DummyEntity, DummyContext>[0]));
+            TestRun("by delegates", () => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>[0]));
 
-            void TestRun(string desc, Func<Func<DummyContext, Task<Func<DummyEntity, bool>>>> targetCode) => new TestCaseRunner()
+            void TestRun(string desc, Func<Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
                 .Run(targetCode)
                 .Verify((actual, _) => {
                     var actualFilterFunc = actual(new DummyContext()).GetAwaiter().GetResult();
@@ -39,7 +39,7 @@ namespace Inasync.FilterPipelines.Tests {
                 //TestRun("by interfaces", filters => FilterPipeline.Build(filters));
                 TestRun("by delegates", filters => FilterPipeline.Build(filters.Select(f => f.Delegate)));
 
-                void TestRun(string desc, Func<SpyPredicateFilter[], Func<DummyContext, Task<Func<DummyEntity, bool>>>> targetCode) {
+                void TestRun(string desc, Func<SpyPredicateFilter[], Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>> targetCode) {
                     var invokedFilters = new List<SpyPredicateFilter>();
                     var filters = fBehaviors.Select(x => new SpyPredicateFilter(invokedFilters, x.result, x.cancelled)).ToArray();
                     var expectedFilters = expected.fIndexes.Select(i => filters[i]).ToArray();
@@ -70,7 +70,7 @@ namespace Inasync.FilterPipelines.Tests {
         [TestMethod]
         public void Build_SequenceFilters_Null() {
             //TestRun("by interfaces", () => FilterPipeline.Build((SpySequenceFilter[])null));
-            TestRun("by delegates", () => FilterPipeline.Build((SequenceFilterMiddleware<DummyEntity, DummyContext>[])null));
+            TestRun("by delegates", () => FilterPipeline.Build((MiddlewareFunc<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>[])null));
 
             void TestRun(string desc, Func<Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
                 .Run(targetCode)
@@ -80,7 +80,7 @@ namespace Inasync.FilterPipelines.Tests {
         [TestMethod]
         public void Build_SequenceFilters_Empty() {
             //TestRun("by interfaces", () => FilterPipeline.Build(new SpySequenceFilter[0]));
-            TestRun("by delegates", () => FilterPipeline.Build(new SequenceFilterMiddleware<DummyEntity, DummyContext>[0]));
+            TestRun("by delegates", () => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>[0]));
 
             void TestRun(string desc, Func<Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
                 .Run(targetCode)
@@ -137,11 +137,11 @@ namespace Inasync.FilterPipelines.Tests {
                 _cancelled = cancelled;
             }
 
-            public PredicateFilterMiddleware<DummyEntity, DummyContext> Delegate => Middleware;
+            public MiddlewareFunc<DummyContext, Task<PredicateFilterFunc<DummyEntity>>> Delegate => Middleware;
 
             public DummyContext ActualContext { get; private set; }
 
-            protected override Func<DummyEntity, bool> Create(DummyContext context, ref bool cancelled) {
+            protected override PredicateFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
                 ActualContext = context;
                 cancelled = _cancelled;
 
@@ -163,7 +163,7 @@ namespace Inasync.FilterPipelines.Tests {
                 _cancelled = cancelled;
             }
 
-            public SequenceFilterMiddleware<DummyEntity, DummyContext> Delegate => Middleware;
+            public MiddlewareFunc<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> Delegate => Middleware;
 
             public DummyContext ActualContext { get; private set; }
 
