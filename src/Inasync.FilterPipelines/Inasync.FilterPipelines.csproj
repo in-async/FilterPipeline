@@ -11,8 +11,4 @@
     <Version>0.9.0</Version>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Inasync.OnionFunc" Version="0.9.0" />
-  </ItemGroup>
-
 </Project>

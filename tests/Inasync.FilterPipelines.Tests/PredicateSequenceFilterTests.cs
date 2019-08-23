@@ -25,7 +25,7 @@ namespace Inasync.FilterPipelines.Tests {
         }
 
         [TestMethod]
-        public void CreateAsync() {
+        public void Middleware() {
             var source = new[] { new DummyEntity(), new DummyEntity() };
 
             Action TestCase(int testNumber, SpyPredicateFilterCreator predicateCreator, (DummyEntity[] result, DummyEntity[] nextSource) expected) => () => {
@@ -33,13 +33,13 @@ namespace Inasync.FilterPipelines.Tests {
                 var context = new DummyContext();
 
                 IEnumerable<DummyEntity> actualNextSource = default;
-                Func<Task<SequenceFilterFunc<DummyEntity>>> next = () => Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
+                Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
                     actualNextSource = src.ToArray();
                     return src;
                 });
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(async () => (await filter.CreateAsync(context, next))(source))
+                    .Run(async () => (await filter.Middleware(next)(context))(source))
                     .Verify((actual, desc) => {
                         CollectionAssert.AreEqual(expected.result, actual.ToArray(), desc);
 

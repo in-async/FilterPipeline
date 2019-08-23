@@ -19,6 +19,11 @@ namespace Inasync.FilterPipelines.Tests {
         }
 
         [TestMethod]
+        public void Middleware() {
+            Assert.Inconclusive();
+        }
+
+        [TestMethod]
         public void CreateAsync() {
             var source = new[] { new DummyEntity(), new DummyEntity() };
 
@@ -27,13 +32,13 @@ namespace Inasync.FilterPipelines.Tests {
                 var context = new DummyContext();
 
                 IEnumerable<DummyEntity> actualNextSource = default;
-                Func<Task<SequenceFilterFunc<DummyEntity>>> next = () => Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
+                Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
                     actualNextSource = src;
                     return src;
                 });
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(async () => (await filter.CreateAsync(context, next))(source))
+                    .Run(async () => (await filter.Middleware(next)(context))(source))
                     .Verify((actual, desc) => {
                         Assert.AreEqual(result, actual, desc);
 
@@ -58,10 +63,10 @@ namespace Inasync.FilterPipelines.Tests {
             Action TestCase(int testNumber, bool cancelled, SequenceFilterFunc<DummyEntity> expected) => () => {
                 var filter = new DummySequenceFilter(cancelled);
                 var context = new DummyContext();
-                Func<Task<SequenceFilterFunc<DummyEntity>>> next = () => Task.FromResult(nextFunc);
+                Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = _ => Task.FromResult(nextFunc);
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => filter.CreateAsync(context, next))
+                    .Run(() => filter.Middleware(next)(context))
                     .Verify(expected, (Type)null);
             };
 

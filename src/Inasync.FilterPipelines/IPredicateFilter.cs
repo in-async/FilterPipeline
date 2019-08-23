@@ -9,32 +9,12 @@ namespace Inasync.FilterPipelines {
     /// </summary>
     /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
     /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-    public interface IPredicateFilter<T, in TContext> {
+    public interface IPredicateFilter<T, TContext> {
 
-        /// <summary>
-        /// <typeparamref name="T"/> の述語フィルター デリゲートを作成します。
-        /// </summary>
-        /// <param name="context">パイプラインの実行時コンテキスト。常に非 <c>null</c>。</param>
-        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
-        /// <returns>
-        /// このフィルター コンポーネント以降の処理を表す述語フィルター デリゲート。常に非 <c>null</c>。
-        /// デリゲートのパラメーターも常に非 <c>null</c>。
-        /// </returns>
-        Task<Func<T, bool>> CreateAsync(TContext context, Func<Task<Func<T, bool>>> next);
+        Func<TContext, Task<Func<T, bool>>> Middleware(Func<TContext, Task<Func<T, bool>>> next);
     }
 
-    /// <summary>
-    /// <typeparamref name="T"/> の述語フィルター デリゲートを作成します。
-    /// </summary>
-    /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
-    /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-    /// <param name="context">パイプラインの実行時コンテキスト。常に非 <c>null</c>。</param>
-    /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
-    /// <returns>
-    /// このフィルター コンポーネント以降の処理を表す述語フィルター デリゲート。常に非 <c>null</c>。
-    /// デリゲートのパラメーターも常に非 <c>null</c>。
-    /// </returns>
-    public delegate Task<Func<T, bool>> PredicateFilterCreator<T, in TContext>(TContext context, Func<Task<Func<T, bool>>> next);
+    public delegate Func<TContext, Task<Func<T, bool>>> PredicateFilterMiddleware<T, TContext>(Func<TContext, Task<Func<T, bool>>> next);
 
     /// <summary>
     /// <see cref="IPredicateFilter{T, TContext}"/> の抽象クラス。
@@ -48,10 +28,22 @@ namespace Inasync.FilterPipelines {
         public static readonly Func<T, bool> NullFilter = _ => true;
 
         /// <summary>
-        /// <see cref="IPredicateFilter{T, TContext}.CreateAsync(TContext, Func{Task{Func{T, bool}}})"/> の実装。
+        /// <see cref="IPredicateFilter{T, TContext}.Middleware(Func{TContext, Task{Func{T, bool}}})"/> の実装。
+        /// 既定の実装では <see cref="CreateAsync(TContext, Func{TContext, Task{Func{T, bool}}})"/> に処理を委譲します。
+        /// </summary>
+        public virtual Func<TContext, Task<Func<T, bool>>> Middleware(Func<TContext, Task<Func<T, bool>>> next) => context => CreateAsync(context, next);
+
+        /// <summary>
+        /// <typeparamref name="T"/> の述語フィルター デリゲートを作成します。
         /// 既定の実装では <see cref="Create(TContext, ref bool)"/> に処理を委譲します。
         /// </summary>
-        public virtual Task<Func<T, bool>> CreateAsync(TContext context, Func<Task<Func<T, bool>>> next) {
+        /// <param name="context">パイプラインの実行時コンテキスト。常に非 <c>null</c>。</param>
+        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
+        /// <returns>
+        /// このフィルター コンポーネント以降の処理を表す述語フィルター デリゲート。常に非 <c>null</c>。
+        /// デリゲートのパラメーターも常に非 <c>null</c>。
+        /// </returns>
+        protected virtual Task<Func<T, bool>> CreateAsync(TContext context, Func<TContext, Task<Func<T, bool>>> next) {
             Debug.Assert(context != null);
             Debug.Assert(next != null);
 
@@ -60,11 +52,11 @@ namespace Inasync.FilterPipelines {
             Debug.Assert(filterFunc != null);
             if (cancelled) { return Task.FromResult(filterFunc); }
 
-            if (filterFunc == NullFilter) { return next(); }
+            if (filterFunc == NullFilter) { return next(context); }
             return InternalAsync();
 
             async Task<Func<T, bool>> InternalAsync() {
-                Func<T, bool> nextFunc = await next().ConfigureAwait(false);
+                Func<T, bool> nextFunc = await next(context).ConfigureAwait(false);
                 Debug.Assert(nextFunc != null);
                 if (nextFunc == NullFilter) { return filterFunc; }
 

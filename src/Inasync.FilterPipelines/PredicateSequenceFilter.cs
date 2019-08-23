@@ -23,20 +23,23 @@ namespace Inasync.FilterPipelines {
         }
 
         /// <summary>
-        /// <see cref="ISequenceFilter{T, TContext}.CreateAsync(TContext, Func{Task{SequenceFilterFunc{T}}})"/> の実装。
+        /// <see cref="ISequenceFilter{T, TContext}.Middleware(Func{TContext, Task{SequenceFilterFunc{T}}})"/> の実装。
         /// </summary>
-        public async Task<SequenceFilterFunc<T>> CreateAsync(TContext context, Func<Task<SequenceFilterFunc<T>>> next) {
-            Debug.Assert(context != null);
+        public Func<TContext, Task<SequenceFilterFunc<T>>> Middleware(Func<TContext, Task<SequenceFilterFunc<T>>> next) {
             Debug.Assert(next != null);
 
-            Func<T, bool> predicate = await _predicateCreator(context).ConfigureAwait(false);
-            Debug.Assert(predicate != null);
+            return async context => {
+                Debug.Assert(context != null);
 
-            SequenceFilterFunc<T> nextFunc = await next().ConfigureAwait(false);
-            Debug.Assert(nextFunc != null);
+                Func<T, bool> predicate = await _predicateCreator(context).ConfigureAwait(false);
+                Debug.Assert(predicate != null);
 
-            if (predicate == PredicateFilter<T, TContext>.NullFilter) { return nextFunc; }
-            return source => nextFunc(source.Where(predicate));
+                SequenceFilterFunc<T> nextFunc = await next(context).ConfigureAwait(false);
+                Debug.Assert(nextFunc != null);
+
+                if (predicate == PredicateFilter<T, TContext>.NullFilter) { return nextFunc; }
+                return source => nextFunc(source.Where(predicate));
+            };
         }
     }
 }

@@ -18,6 +18,11 @@ namespace Inasync.FilterPipelines.Tests {
         }
 
         [TestMethod]
+        public void Middleware() {
+            Assert.Inconclusive();
+        }
+
+        [TestMethod]
         public void CreateAsync() {
             var entity = new DummyEntity();
 
@@ -26,13 +31,13 @@ namespace Inasync.FilterPipelines.Tests {
                 var context = new DummyContext();
 
                 DummyEntity actualNextEntity = default;
-                Func<Task<Func<DummyEntity, bool>>> next = () => Task.FromResult<Func<DummyEntity, bool>>(x => {
+                Func<DummyContext, Task<Func<DummyEntity, bool>>> next = ctx => Task.FromResult<Func<DummyEntity, bool>>(x => {
                     actualNextEntity = x;
                     return nextResult;
                 });
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(async () => (await filter.CreateAsync(context, next))(entity))
+                    .Run(async () => (await filter.Middleware(next)(context))(entity))
                     .Verify((actual, desc) => {
                         Assert.AreEqual(expected.result, actual, desc);
 
@@ -59,10 +64,10 @@ namespace Inasync.FilterPipelines.Tests {
             Action TestCase(int testNumber, bool cancelled, Func<DummyEntity, bool> expected) => () => {
                 var filter = new DummyPredicateFilter(cancelled);
                 var context = new DummyContext();
-                Func<Task<Func<DummyEntity, bool>>> next = () => Task.FromResult(nextFunc);
+                Func<DummyContext, Task<Func<DummyEntity, bool>>> next = _ => Task.FromResult(nextFunc);
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => filter.CreateAsync(context, next))
+                    .Run(() => filter.Middleware(next)(context))
                     .Verify(expected, (Type)null);
             };
 

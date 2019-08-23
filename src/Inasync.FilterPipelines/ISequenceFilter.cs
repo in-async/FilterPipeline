@@ -10,26 +10,12 @@ namespace Inasync.FilterPipelines {
     /// </summary>
     /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
     /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-    public interface ISequenceFilter<T, in TContext> {
+    public interface ISequenceFilter<T, TContext> {
 
-        /// <summary>
-        /// <see cref="SequenceFilterFunc{T}"/> を作成します。
-        /// </summary>
-        /// <param name="context">パイプラインの実行時コンテキスト。常に非 <c>null</c>。</param>
-        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
-        /// <returns>このフィルター コンポーネント以降の処理を表す <see cref="SequenceFilterFunc{T}"/>。常に非 <c>null</c>。</returns>
-        Task<SequenceFilterFunc<T>> CreateAsync(TContext context, Func<Task<SequenceFilterFunc<T>>> next);
+        Func<TContext, Task<SequenceFilterFunc<T>>> Middleware(Func<TContext, Task<SequenceFilterFunc<T>>> next);
     }
 
-    /// <summary>
-    /// <see cref="SequenceFilterFunc{T}"/> を作成します。
-    /// </summary>
-    /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
-    /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-    /// <param name="context">パイプラインの実行時コンテキスト。常に非 <c>null</c>。</param>
-    /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
-    /// <returns>このフィルター コンポーネント以降の処理を表す <see cref="SequenceFilterFunc{T}"/>。常に非 <c>null</c>。</returns>
-    public delegate Task<SequenceFilterFunc<T>> SequenceFilterCreator<T, in TContext>(TContext context, Func<Task<SequenceFilterFunc<T>>> next);
+    public delegate Func<TContext, Task<SequenceFilterFunc<T>>> SequenceFilterMiddleware<T, TContext>(Func<TContext, Task<SequenceFilterFunc<T>>> next);
 
     /// <summary>
     /// <typeparamref name="T"/> のシーケンスをフィルター処理するデリゲート。
@@ -51,10 +37,19 @@ namespace Inasync.FilterPipelines {
         public static readonly SequenceFilterFunc<T> NullFilter = source => source;
 
         /// <summary>
-        /// <see cref="ISequenceFilter{T, TContext}.CreateAsync(TContext, Func{Task{SequenceFilterFunc{T}}})"/> の実装。
+        /// <see cref="ISequenceFilter{T, TContext}.Middleware(Func{TContext, Task{SequenceFilterFunc{T}}})"/> の実装。
+        /// 既定の実装では <see cref="CreateAsync(TContext, Func{TContext, Task{SequenceFilterFunc{T}}})"/> に処理を委譲します。
+        /// </summary>
+        public Func<TContext, Task<SequenceFilterFunc<T>>> Middleware(Func<TContext, Task<SequenceFilterFunc<T>>> next) => context => CreateAsync(context, next);
+
+        /// <summary>
+        /// <see cref="SequenceFilterFunc{T}"/> を作成します。
         /// 既定の実装では <see cref="Create(TContext, ref bool)"/> に処理を委譲します。
         /// </summary>
-        public virtual Task<SequenceFilterFunc<T>> CreateAsync(TContext context, Func<Task<SequenceFilterFunc<T>>> next) {
+        /// <param name="context">パイプラインの実行時コンテキスト。常に非 <c>null</c>。</param>
+        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
+        /// <returns>このフィルター コンポーネント以降の処理を表す <see cref="SequenceFilterFunc{T}"/>。常に非 <c>null</c>。</returns>
+        protected virtual Task<SequenceFilterFunc<T>> CreateAsync(TContext context, Func<TContext, Task<SequenceFilterFunc<T>>> next) {
             Debug.Assert(context != null);
             Debug.Assert(next != null);
 
@@ -63,11 +58,11 @@ namespace Inasync.FilterPipelines {
             Debug.Assert(filterFunc != null);
             if (cancelled) { return Task.FromResult(filterFunc); }
 
-            if (filterFunc == NullFilter) { return next(); }
+            if (filterFunc == NullFilter) { return next(context); }
             return InternalAsync();
 
             async Task<SequenceFilterFunc<T>> InternalAsync() {
-                SequenceFilterFunc<T> nextFunc = await next().ConfigureAwait(false);
+                SequenceFilterFunc<T> nextFunc = await next(context).ConfigureAwait(false);
                 Debug.Assert(nextFunc != null);
                 if (nextFunc == NullFilter) { return filterFunc; }
 
