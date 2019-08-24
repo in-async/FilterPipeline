@@ -11,11 +11,27 @@ namespace Inasync.FilterPipelines {
     /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
     public interface IPredicateFilter<T, TContext> {
 
+        /// <summary>
+        /// ミドルウェアで定義されている処理を組み込んだ新しいフィルター パイプライン関数を作成します。
+        /// </summary>
+        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
+        /// <returns>このミドルウェアを組み込んだ新しいフィルター パイプライン関数。常に非 <c>null</c>。</returns>
         Func<TContext, Task<PredicateFilterFunc<T>>> Middleware(Func<TContext, Task<PredicateFilterFunc<T>>> next);
     }
 
+    /// <summary>
+    /// <see cref="IPredicateFilter{T, TContext}"/> の拡張クラス。
+    /// </summary>
     public static class PredicateFilterExtensions {
 
+        /// <summary>
+        /// フィルターを <see cref="MiddlewareFunc{T, TResult}"/> デリゲートに変換します。
+        /// </summary>
+        /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
+        /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
+        /// <param name="filter">ミドルウェアに変換する <see cref="IPredicateFilter{T, TContext}"/>。</param>
+        /// <returns>フィルターから変換された <see cref="MiddlewareFunc{T, TResult}"/> デリゲート。</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="filter"/> is <c>null</c>.</exception>
         public static MiddlewareFunc<TContext, Task<PredicateFilterFunc<T>>> ToMiddleware<T, TContext>(this IPredicateFilter<T, TContext> filter) {
             if (filter == null) { throw new ArgumentNullException(nameof(filter)); }
 
@@ -23,6 +39,12 @@ namespace Inasync.FilterPipelines {
         }
     }
 
+    /// <summary>
+    /// <typeparamref name="T"/> の述語フィルター デリゲート。
+    /// </summary>
+    /// <typeparam name="T">フィルター処理の対象となるエンティティの型。</typeparam>
+    /// <param name="entity">フィルター処理の対象となるエンティティ。</param>
+    /// <returns><paramref name="entity"/> が述語フィルターの条件を満たせば <c>true</c>、それ以外は <c>false</c>。</returns>
     public delegate bool PredicateFilterFunc<T>(T entity);
 
     /// <summary>
@@ -37,8 +59,8 @@ namespace Inasync.FilterPipelines {
         public static readonly PredicateFilterFunc<T> NullFilter = _ => true;
 
         /// <summary>
-        /// <see cref="IPredicateFilter{T, TContext}.Middleware(Func{TContext, Task{Func{T, bool}}})"/> の実装。
-        /// 既定の実装では <see cref="CreateAsync(TContext, Func{TContext, Task{Func{T, bool}}})"/> に処理を委譲します。
+        /// <see cref="IPredicateFilter{T, TContext}.Middleware(Func{TContext, Task{PredicateFilterFunc{T}}})"/> の実装。
+        /// 既定の実装では <see cref="CreateAsync(TContext, Func{TContext, Task{PredicateFilterFunc{T}}})"/> に処理を委譲します。
         /// </summary>
         public virtual Func<TContext, Task<PredicateFilterFunc<T>>> Middleware(Func<TContext, Task<PredicateFilterFunc<T>>> next) => context => CreateAsync(context, next);
 

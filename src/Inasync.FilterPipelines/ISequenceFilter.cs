@@ -12,11 +12,27 @@ namespace Inasync.FilterPipelines {
     /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
     public interface ISequenceFilter<T, TContext> {
 
+        /// <summary>
+        /// ミドルウェアで定義されている処理を組み込んだ新しいフィルター パイプライン関数を作成します。
+        /// </summary>
+        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
+        /// <returns>このミドルウェアを組み込んだ新しいフィルター パイプライン関数。常に非 <c>null</c>。</returns>
         Func<TContext, Task<SequenceFilterFunc<T>>> Middleware(Func<TContext, Task<SequenceFilterFunc<T>>> next);
     }
 
+    /// <summary>
+    /// <see cref="ISequenceFilter{T, TContext}"/> の拡張クラス。
+    /// </summary>
     public static class SequenceFilterExtensions {
 
+        /// <summary>
+        /// フィルターを <see cref="MiddlewareFunc{T, TResult}"/> デリゲートに変換します。
+        /// </summary>
+        /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
+        /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
+        /// <param name="filter">ミドルウェアに変換する <see cref="ISequenceFilter{T, TContext}"/>。</param>
+        /// <returns>フィルターから変換された <see cref="MiddlewareFunc{T, TResult}"/> デリゲート。</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="filter"/> is <c>null</c>.</exception>
         public static MiddlewareFunc<TContext, Task<SequenceFilterFunc<T>>> ToMiddleware<T, TContext>(this ISequenceFilter<T, TContext> filter) {
             if (filter == null) { throw new ArgumentNullException(nameof(filter)); }
 
@@ -28,8 +44,8 @@ namespace Inasync.FilterPipelines {
     /// <typeparamref name="T"/> のシーケンスをフィルター処理するデリゲート。
     /// </summary>
     /// <typeparam name="T">フィルター処理の対象となる要素の型。</typeparam>
-    /// <param name="source">フィルター処理の対象となる <typeparamref name="T"/> のシーケンス。常に非 <c>null</c>。各要素も常に非 <c>null</c>。</param>
-    /// <returns>フィルター処理された <typeparamref name="T"/> のシーケンス。常に非 <c>null</c>。各要素も常に非 <c>null</c>。</returns>
+    /// <param name="source">フィルター処理の対象となる <typeparamref name="T"/> のシーケンス。常に非 <c>null</c>。</param>
+    /// <returns>フィルター処理された <typeparamref name="T"/> のシーケンス。常に非 <c>null</c>。</returns>
     public delegate IEnumerable<T> SequenceFilterFunc<T>(IEnumerable<T> source);
 
     /// <summary>
