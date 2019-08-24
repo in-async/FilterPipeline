@@ -64,7 +64,7 @@ namespace Inasync.FilterPipelines {
             foreach (var middleware in middlewares.Reverse()) {
                 Debug.Assert(middleware != null);
 
-                pipeline = pipeline.Wear(middleware);
+                pipeline = pipeline.Layer(middleware);
             }
 
             return pipeline;

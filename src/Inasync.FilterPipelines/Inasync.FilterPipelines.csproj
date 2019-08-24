@@ -7,8 +7,12 @@
     <Description>FilterPipelines is a simple .NET helper library for building filter pipelines with middleware patterns.</Description>
     <PackageProjectUrl>https://github.com/in-async/FilterPipelines</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/in-async/FilterPipelines/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageTags>library filter pipeline</PackageTags>
+    <PackageTags>library filter pipeline middleware</PackageTags>
     <Version>0.9.0</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Inasync.OnionFunc" Version="0.9.1" />
+  </ItemGroup>
 
 </Project>
