@@ -13,7 +13,7 @@ namespace Inasync.FilterPipelines.Tests {
             var entity = new DummyEntity();
 
             new TestCaseRunner()
-                .Run(() => PredicateFilter<DummyEntity, DummyContext>.NullFilter(entity))
+                .Run(() => PredicateFilter<DummyContext, DummyEntity>.NullFilter(entity))
                 .Verify(true, (Type)null);
         }
 
@@ -79,7 +79,7 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private sealed class SpyPredicateFilter : PredicateFilter<DummyEntity, DummyContext> {
+        private sealed class SpyPredicateFilter : PredicateFilter<DummyContext, DummyEntity> {
             private readonly bool _result;
             private readonly bool _cancelled;
 
@@ -102,7 +102,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private sealed class DummyPredicateFilter : PredicateFilter<DummyEntity, DummyContext> {
+        private sealed class DummyPredicateFilter : PredicateFilter<DummyContext, DummyEntity> {
             private readonly bool _cancelled;
 
             public DummyPredicateFilter(bool cancelled) => _cancelled = cancelled;

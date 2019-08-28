@@ -29,7 +29,7 @@ namespace Inasync.FilterPipelines.Tests {
                 .Run(targetCode)
                 .Verify((actual, _) => {
                     var actualFilterFunc = actual(new DummyContext()).GetAwaiter().GetResult();
-                    Assert.AreEqual(PredicateFilter<DummyEntity, DummyContext>.NullFilter, actualFilterFunc);
+                    Assert.AreEqual(PredicateFilter<DummyContext, DummyEntity>.NullFilter, actualFilterFunc);
                 }, (Type)null);
         }
 
@@ -86,7 +86,7 @@ namespace Inasync.FilterPipelines.Tests {
                 .Run(targetCode)
                 .Verify((actual, _) => {
                     var actualFilterFunc = actual(new DummyContext()).GetAwaiter().GetResult();
-                    Assert.AreEqual(SequenceFilter<DummyEntity, DummyContext>.NullFilter, actualFilterFunc);
+                    Assert.AreEqual(SequenceFilter<DummyContext, DummyEntity>.NullFilter, actualFilterFunc);
                 }, (Type)null);
         }
 
@@ -126,7 +126,7 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private class SpyPredicateFilter : PredicateFilter<DummyEntity, DummyContext> {
+        private class SpyPredicateFilter : PredicateFilter<DummyContext, DummyEntity> {
             private readonly List<SpyPredicateFilter> _invokedFilters;
             private readonly bool _result;
             private readonly bool _cancelled;
@@ -152,7 +152,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private class SpySequenceFilter : SequenceFilter<DummyEntity, DummyContext> {
+        private class SpySequenceFilter : SequenceFilter<DummyContext, DummyEntity> {
             private readonly List<SpySequenceFilter> _invokedFilters;
             private readonly DummyEntity[] _result;
             private readonly bool _cancelled;
