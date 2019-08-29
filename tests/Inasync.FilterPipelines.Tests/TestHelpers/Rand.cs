@@ -147,6 +147,24 @@ namespace System {
         }
 
         /// <summary>
+        /// ランダムな長さの配列を返します。
+        /// </summary>
+        /// <typeparam name="T">要素の型。</typeparam>
+        /// <param name="minLength">最小配列長。既定値は 0。</param>
+        /// <param name="maxLength">最大配列長。既定値は 10。</param>
+        /// <returns>配列長が <paramref name="minLength"/> 以上 <paramref name="maxLength"/> 未満の配列。常に非 <c>null</c>。</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="minLength"/> または <paramref name="maxLength"/> が負の値です。
+        /// または、<paramref name="minLength"/> の値が <paramref name="maxLength"/> を超えています。
+        /// </exception>
+        public static T[] Array<T>(int minLength = 0, int maxLength = 10) where T : new() {
+            if (minLength < 0) { throw new ArgumentOutOfRangeException("負の値は許容されません。", nameof(minLength)); }
+            if (maxLength < 0) { throw new ArgumentOutOfRangeException("負の値は許容されません。", nameof(maxLength)); }
+
+            return Array(_ => new T(), minLength, maxLength);
+        }
+
+        /// <summary>
         /// 配列からランダムに一つを選択します。
         /// </summary>
         /// <typeparam name="T">要素の型。</typeparam>

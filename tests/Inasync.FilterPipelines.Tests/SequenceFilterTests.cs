@@ -20,96 +20,175 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public void Middleware() {
-            Assert.Inconclusive();
+            SequenceFilterFunc<DummyEntity> createAsyncResult = _ => Rand.Array<DummyEntity>();
+            var filter = new SpySequenceFilterToMiddleware(createAsyncResult);
+            Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = _ => Task.FromResult<SequenceFilterFunc<DummyEntity>>(__ => Rand.Array(___ => new DummyEntity()));
+            var context = new DummyContext();
+
+            new TestCaseRunner()
+                .Run(() => filter.Middleware(next)(context))
+                .Verify((actual, desc) => {
+                    Assert.AreEqual(createAsyncResult, actual, desc);
+
+                    Assert.AreEqual(context, filter.ActualContext, desc);
+                    Assert.AreEqual(next, filter.ActualNext, desc);
+                }, (Type)null);
         }
 
         [TestMethod]
-        public void CreateAsync() {
-            var source = new[] { new DummyEntity(), new DummyEntity() };
+        public void CreateAsync_Cancelled() {
+            SequenceFilterFunc<DummyEntity> filterFunc = _ => Rand.Array<DummyEntity>();
+            var filter = new SpySequenceFilterToCreateAsync(createResult: filterFunc, cancelled: true);
+            var context = new DummyContext();
+            Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = _ => throw new AssertFailedException("next は呼ばれてはいけません。");
 
-            Action TestCase(int testNumber, bool cancelled, DummyEntity[] result, DummyEntity[] expectedNextSource) => () => {
-                var filter = new SpySequenceFilter(result, cancelled);
-                var context = new DummyContext();
+            new TestCaseRunner()
+                .Run(() => filter.CreateAsync(context, next))
+                .Verify((actual, desc) => {
+                    Assert.AreEqual(filterFunc, actual, desc);
 
-                IEnumerable<DummyEntity> actualNextSource = default;
-                Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
-                    actualNextSource = src;
-                    return src;
-                });
+                    Assert.AreEqual(context, filter.ActualContext, desc);
+                    Assert.AreEqual(false, filter.ActualCancelled, desc);
+                }, (Type)null);
+        }
 
-                new TestCaseRunner($"No.{testNumber}")
-                    .Run(async () => (await filter.Middleware(next)(context))(source))
-                    .Verify((actual, desc) => {
-                        Assert.AreEqual(result, actual, desc);
+        [TestMethod]
+        public void CreateAsync_NullFilterFunc() {
+            var filter = new SpySequenceFilterToCreateAsync(createResult: SpySequenceFilterToCreateAsync.NullFilter, cancelled: false);
+            var context = new DummyContext();
 
-                        Assert.AreEqual(context, filter.ActualContext, desc);
-                        Assert.AreEqual(source, filter.ActualSource, desc);
-                        Assert.AreEqual(expectedNextSource, actualNextSource, desc);
-                    }, (Type)null);
+            SequenceFilterFunc<DummyEntity> nextFunc = _ => Rand.Array<DummyEntity>();
+            DummyContext actualNextContext = default;
+            Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => {
+                actualNextContext = ctx;
+                return Task.FromResult(nextFunc);
             };
 
-            var source2 = new[] { new DummyEntity() };
-            new[]{
-                TestCase( 0, cancelled: true , result: source , expectedNextSource: null   ),
-                TestCase( 1, cancelled: false, result: source , expectedNextSource: source ),
-                TestCase( 2, cancelled: false, result: source2, expectedNextSource: source2),
-            }.Run();
+            new TestCaseRunner()
+                .Run(() => filter.CreateAsync(context, next))
+                .Verify((actual, desc) => {
+                    Assert.AreEqual(nextFunc, actual, desc);
+
+                    Assert.AreEqual(context, filter.ActualContext, desc);
+                    Assert.AreEqual(false, filter.ActualCancelled, desc);
+                    Assert.AreEqual(context, actualNextContext, desc);
+                }, (Type)null);
+        }
+
+        [TestMethod]
+        public void CreateAsync_NullNextFunc() {
+            SequenceFilterFunc<DummyEntity> filterFunc = _ => Rand.Array<DummyEntity>();
+            var filter = new SpySequenceFilterToCreateAsync(createResult: filterFunc, cancelled: false);
+            var context = new DummyContext();
+
+            DummyContext actualNextContext = default;
+            Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => {
+                actualNextContext = ctx;
+                return Task.FromResult(SpySequenceFilterToCreateAsync.NullFilter);
+            };
+
+            new TestCaseRunner()
+                .Run(() => filter.CreateAsync(context, next))
+                .Verify((actual, desc) => {
+                    Assert.AreEqual(filterFunc, actual, desc);
+
+                    Assert.AreEqual(context, filter.ActualContext, desc);
+                    Assert.AreEqual(false, filter.ActualCancelled, desc);
+                    Assert.AreEqual(context, actualNextContext, desc);
+                }, (Type)null);
+        }
+
+        [TestMethod]
+        public void CreateAsync_Abyss() {
+            var createResult = Rand.Array<DummyEntity>();
+            IEnumerable<DummyEntity> actualSource = default;
+            var filter = new SpySequenceFilterToCreateAsync(src => {
+                actualSource = src;
+                return createResult;
+            }, cancelled: false);
+
+            var nextResult = Rand.Array<DummyEntity>();
+            DummyContext actualNextContext = default;
+            IEnumerable<DummyEntity> actualNextSource = default;
+            Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => {
+                actualNextContext = ctx;
+                return Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
+                    actualNextSource = src;
+                    return nextResult;
+                });
+            };
+
+            var context = new DummyContext();
+            var source = new[] { new DummyEntity(), new DummyEntity() };
+
+            new TestCaseRunner()
+                .Run(async () => (await filter.CreateAsync(context, next))(source))
+                .Verify((actual, desc) => {
+                    Assert.AreEqual(nextResult, actual, desc);
+
+                    Assert.AreEqual(context, filter.ActualContext, desc);
+                    Assert.AreEqual(false, filter.ActualCancelled, desc);
+                    Assert.AreEqual(source, actualSource, desc);
+                    Assert.AreEqual(context, actualNextContext, desc);
+                    Assert.AreEqual(createResult, actualNextSource, desc);
+                }, (Type)null);
         }
 
         [TestMethod]
         public void Create() {
-            SequenceFilterFunc<DummyEntity> nextFunc = src => src;
+            var filter = new FakeSequenceFilterToCreate();
+            var context = new DummyContext();
+            var cancelled = Rand.Bool();
 
-            Action TestCase(int testNumber, bool cancelled, SequenceFilterFunc<DummyEntity> expected) => () => {
-                var filter = new DummySequenceFilter(cancelled);
-                var context = new DummyContext();
-                Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = _ => Task.FromResult(nextFunc);
-
-                new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => filter.Middleware(next)(context))
-                    .Verify(expected, (Type)null);
-            };
-
-            new[] {
-                TestCase( 0, cancelled:false, expected:nextFunc                    ),  // 既定ではフィルターしないので nextFunc が呼ばれる。
-                TestCase( 1, cancelled:true , expected:SpySequenceFilter.NullFilter),  // キャンセル時は nextFunc は呼ばれないので、既定の NullFilter が返却される。
-            }.Run();
+            new TestCaseRunner()
+                .Run(() => filter.Create(context, ref cancelled))
+                .Verify(FakeSequenceFilterToCreate.NullFilter, (Type)null);
         }
 
         #region Helpers
 
-        private class SpySequenceFilter : SequenceFilter<DummyEntity, DummyContext> {
-            private readonly DummyEntity[] _result;
+        private sealed class SpySequenceFilterToMiddleware : SequenceFilter<DummyEntity, DummyContext> {
+            private readonly SequenceFilterFunc<DummyEntity> _createAsyncResult;
+
+            public SpySequenceFilterToMiddleware(SequenceFilterFunc<DummyEntity> createAsyncResult) => _createAsyncResult = createAsyncResult;
+
+            public DummyContext ActualContext { get; private set; }
+            public Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> ActualNext { get; private set; }
+
+            protected override Task<SequenceFilterFunc<DummyEntity>> CreateAsync(DummyContext context, Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next) {
+                ActualContext = context;
+                ActualNext = next;
+
+                return Task.FromResult(_createAsyncResult);
+            }
+        }
+
+        private class SpySequenceFilterToCreateAsync : SequenceFilter<DummyEntity, DummyContext> {
+            private readonly SequenceFilterFunc<DummyEntity> _createResult;
             private readonly bool _cancelled;
 
-            public SpySequenceFilter(DummyEntity[] result, bool cancelled) {
-                _result = result;
+            public SpySequenceFilterToCreateAsync(SequenceFilterFunc<DummyEntity> createResult, bool cancelled) {
+                _createResult = createResult;
                 _cancelled = cancelled;
             }
 
             public DummyContext ActualContext { get; private set; }
-            public IEnumerable<DummyEntity> ActualSource { get; private set; }
+            public bool ActualCancelled { get; private set; }
+
+            public new Task<SequenceFilterFunc<DummyEntity>> CreateAsync(DummyContext context, Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next) => base.CreateAsync(context, next);
 
             protected override SequenceFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
                 ActualContext = context;
+                ActualCancelled = cancelled;
                 cancelled = _cancelled;
 
-                return source => {
-                    ActualSource = source;
-                    return _result;
-                };
+                return _createResult;
             }
         }
 
-        private sealed class DummySequenceFilter : SequenceFilter<DummyEntity, DummyContext> {
-            private readonly bool _cancelled;
+        private sealed class FakeSequenceFilterToCreate : SequenceFilter<DummyEntity, DummyContext> {
 
-            public DummySequenceFilter(bool cancelled) => _cancelled = cancelled;
-
-            protected override SequenceFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
-                cancelled = _cancelled;
-                return base.Create(context, ref cancelled);
-            }
+            public new SequenceFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) => base.Create(context, ref cancelled);
         }
 
         #endregion Helpers
