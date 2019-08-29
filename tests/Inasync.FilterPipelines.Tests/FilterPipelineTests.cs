@@ -11,52 +11,41 @@ namespace Inasync.FilterPipelines.Tests {
     public class FilterPipelineTests {
 
         [TestMethod]
-        public void Build_PredicateFilters_Null() {
-            //TestRun("by interfaces", () => FilterPipeline.Build((SpyPredicateFilter[])null));
-            TestRun("by delegates", () => FilterPipeline.Build((MiddlewareFunc<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>[])null));
-
-            void TestRun(string desc, Func<Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
-                .Run(targetCode)
-                .Verify((actual, _) => { }, typeof(ArgumentNullException));
+        public void Build_PredicateFuncs_Null() {
+            new TestCaseRunner()
+                .Run(() => FilterPipeline.Build((MiddlewareFunc<DummyContext, Task<PredicateFunc<DummyEntity>>>[])null))
+                .Verify((actual, desc) => { }, typeof(ArgumentNullException));
         }
 
         [TestMethod]
-        public void Build_PredicateFilters_Empty() {
-            //TestRun("by interfaces", () => FilterPipeline.Build(new SpyPredicateFilter[0]));
-            TestRun("by delegates", () => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>[0]));
-
-            void TestRun(string desc, Func<Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
-                .Run(targetCode)
-                .Verify((actual, _) => {
-                    var actualFilterFunc = actual(new DummyContext()).GetAwaiter().GetResult();
-                    Assert.AreEqual(PredicateFilter<DummyContext, DummyEntity>.NullFilter, actualFilterFunc);
+        public void Build_PredicateFuncs_Empty() {
+            new TestCaseRunner()
+                .Run(() => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<PredicateFunc<DummyEntity>>>[0]))
+                .Verify((actual, desc) => {
+                    var actualPredicate = actual(new DummyContext()).GetAwaiter().GetResult();
+                    Assert.AreEqual(PredicateComponent<DummyContext, DummyEntity>.NullPredicate, actualPredicate, desc);
                 }, (Type)null);
         }
 
         [TestMethod]
-        public void Build_PredicateFilters() {
+        public void Build_PredicateFuncs() {
             Action TestCase(int testNumber, (bool result, bool cancelled)[] fBehaviors, (bool result, int[] fIndexes) expected) => () => {
-                //TestRun("by interfaces", filters => FilterPipeline.Build(filters));
-                TestRun("by delegates", filters => FilterPipeline.Build(filters.Select(f => f.Delegate)));
+                var invokedPredicates = new List<SpyPredicateComponent>();
+                var components = fBehaviors.Select(x => new SpyPredicateComponent(invokedPredicates, x.result, x.cancelled)).ToArray();
+                var expectedPredicates = expected.fIndexes.Select(i => components[i]).ToArray();
 
-                void TestRun(string desc, Func<SpyPredicateFilter[], Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>>> targetCode) {
-                    var invokedFilters = new List<SpyPredicateFilter>();
-                    var filters = fBehaviors.Select(x => new SpyPredicateFilter(invokedFilters, x.result, x.cancelled)).ToArray();
-                    var expectedFilters = expected.fIndexes.Select(i => filters[i]).ToArray();
+                new TestCaseRunner($"No.{testNumber}")
+                    .Run(() => FilterPipeline.Build(components.Select(c => c.Delegate)))
+                    .Verify((actual, desc) => {
+                        var context = new DummyContext();
+                        var actualTask = actual(context);
+                        Assert.IsTrue(invokedPredicates.All(x => x.ActualContext == context), desc);
 
-                    new TestCaseRunner($"No.{testNumber} {desc}")
-                        .Run(() => targetCode(filters))
-                        .Verify((actual, subDesc) => {
-                            var context = new DummyContext();
-                            var actualTask = actual(context);
-                            Assert.IsTrue(invokedFilters.All(x => x.ActualContext == context), subDesc);
-
-                            var entity = new DummyEntity();
-                            var actualResult = actualTask.GetAwaiter().GetResult()(entity);
-                            Assert.AreEqual(expected.result, actualResult, subDesc);
-                            CollectionAssert.AreEqual(expectedFilters, invokedFilters, subDesc);
-                        }, (Type)null);
-                }
+                        var entity = new DummyEntity();
+                        var actualResult = actualTask.GetAwaiter().GetResult()(entity);
+                        Assert.AreEqual(expected.result, actualResult, desc);
+                        CollectionAssert.AreEqual(expectedPredicates, invokedPredicates, desc);
+                    }, (Type)null);
             };
 
             new[] {
@@ -68,51 +57,40 @@ namespace Inasync.FilterPipelines.Tests {
         }
 
         [TestMethod]
-        public void Build_SequenceFilters_Null() {
-            //TestRun("by interfaces", () => FilterPipeline.Build((SpySequenceFilter[])null));
-            TestRun("by delegates", () => FilterPipeline.Build((MiddlewareFunc<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>[])null));
-
-            void TestRun(string desc, Func<Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
-                .Run(targetCode)
-                .Verify((actual, _) => { }, typeof(ArgumentNullException));
+        public void Build_FilterFuncs_Null() {
+            new TestCaseRunner()
+                .Run(() => FilterPipeline.Build((MiddlewareFunc<DummyContext, Task<FilterFunc<DummyEntity>>>[])null))
+                .Verify((actual, desc) => { }, typeof(ArgumentNullException));
         }
 
         [TestMethod]
-        public void Build_SequenceFilters_Empty() {
-            //TestRun("by interfaces", () => FilterPipeline.Build(new SpySequenceFilter[0]));
-            TestRun("by delegates", () => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>[0]));
-
-            void TestRun(string desc, Func<Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>> targetCode) => new TestCaseRunner()
-                .Run(targetCode)
-                .Verify((actual, _) => {
-                    var actualFilterFunc = actual(new DummyContext()).GetAwaiter().GetResult();
-                    Assert.AreEqual(SequenceFilter<DummyContext, DummyEntity>.NullFilter, actualFilterFunc);
+        public void Build_FilterFuncs_Empty() {
+            new TestCaseRunner()
+                .Run(() => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<FilterFunc<DummyEntity>>>[0]))
+                .Verify((actual, desc) => {
+                    var actualFilter = actual(new DummyContext()).GetAwaiter().GetResult();
+                    Assert.AreEqual(FilterComponent<DummyContext, DummyEntity>.NullFilter, actualFilter, desc);
                 }, (Type)null);
         }
 
         [TestMethod]
-        public void Build_SequenceFilters() {
+        public void Build_FilterFuncs() {
             Action TestCase(int testNumber, (DummyEntity[] result, bool cancelled)[] fBehaviors, (DummyEntity[] result, int[] fIndexes) expected) => () => {
-                //TestRun("by interfaces", filters => FilterPipeline.Build(filters));
-                TestRun("by delegates", filters => FilterPipeline.Build(filters.Select(f => f.Delegate)));
+                var invokedFilters = new List<SpyFilterComponent>();
+                var components = fBehaviors.Select(x => new SpyFilterComponent(invokedFilters, x.result, x.cancelled)).ToArray();
+                var expectedFilters = expected.fIndexes.Select(i => components[i]).ToArray();
 
-                void TestRun(string desc, Func<SpySequenceFilter[], Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>>> targetCode) {
-                    var invokedFilters = new List<SpySequenceFilter>();
-                    var filters = fBehaviors.Select(x => new SpySequenceFilter(invokedFilters, x.result, x.cancelled)).ToArray();
-                    var expectedFilters = expected.fIndexes.Select(i => filters[i]).ToArray();
+                new TestCaseRunner($"No.{testNumber}")
+                    .Run(() => FilterPipeline.Build(components.Select(c => c.Delegate)))
+                    .Verify((actual, desc) => {
+                        var context = new DummyContext();
+                        var actualTask = actual(context);
+                        Assert.IsTrue(invokedFilters.All(x => x.ActualContext == context), desc);
 
-                    new TestCaseRunner($"No.{testNumber} {desc}")
-                        .Run(() => targetCode(filters))
-                        .Verify((actual, subDesc) => {
-                            var context = new DummyContext();
-                            var actualTask = actual(context);
-                            Assert.IsTrue(invokedFilters.All(x => x.ActualContext == context), subDesc);
-
-                            var actualResult = actualTask.GetAwaiter().GetResult()(new[] { new DummyEntity(), new DummyEntity() });
-                            Assert.AreEqual(expected.result, actualResult, subDesc);
-                            CollectionAssert.AreEqual(expectedFilters, invokedFilters, subDesc);
-                        }, (Type)null);
-                }
+                        var actualResult = actualTask.GetAwaiter().GetResult()(new[] { new DummyEntity(), new DummyEntity() });
+                        Assert.AreEqual(expected.result, actualResult, desc);
+                        CollectionAssert.AreEqual(expectedFilters, invokedFilters, desc);
+                    }, (Type)null);
             };
 
             var source = new[] { new DummyEntity() };
@@ -126,48 +104,48 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private class SpyPredicateFilter : PredicateFilter<DummyContext, DummyEntity> {
-            private readonly List<SpyPredicateFilter> _invokedFilters;
+        private class SpyPredicateComponent : PredicateComponent<DummyContext, DummyEntity> {
+            private readonly List<SpyPredicateComponent> _invokedPredicates;
             private readonly bool _result;
             private readonly bool _cancelled;
 
-            public SpyPredicateFilter(List<SpyPredicateFilter> invokedFilters, bool result, bool cancelled) {
-                _invokedFilters = invokedFilters;
+            public SpyPredicateComponent(List<SpyPredicateComponent> invokedPredicates, bool result, bool cancelled) {
+                _invokedPredicates = invokedPredicates;
                 _result = result;
                 _cancelled = cancelled;
             }
 
-            public MiddlewareFunc<DummyContext, Task<PredicateFilterFunc<DummyEntity>>> Delegate => Middleware;
+            public MiddlewareFunc<DummyContext, Task<PredicateFunc<DummyEntity>>> Delegate => Middleware;
 
             public DummyContext ActualContext { get; private set; }
 
-            protected override PredicateFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
+            protected override PredicateFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
                 ActualContext = context;
                 cancelled = _cancelled;
 
                 return entity => {
-                    _invokedFilters.Add(this);
+                    _invokedPredicates.Add(this);
                     return _result;
                 };
             }
         }
 
-        private class SpySequenceFilter : SequenceFilter<DummyContext, DummyEntity> {
-            private readonly List<SpySequenceFilter> _invokedFilters;
+        private class SpyFilterComponent : FilterComponent<DummyContext, DummyEntity> {
+            private readonly List<SpyFilterComponent> _invokedFilters;
             private readonly DummyEntity[] _result;
             private readonly bool _cancelled;
 
-            public SpySequenceFilter(List<SpySequenceFilter> invokedFilters, DummyEntity[] result, bool cancelled) {
+            public SpyFilterComponent(List<SpyFilterComponent> invokedFilters, DummyEntity[] result, bool cancelled) {
                 _invokedFilters = invokedFilters;
                 _result = result;
                 _cancelled = cancelled;
             }
 
-            public MiddlewareFunc<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> Delegate => Middleware;
+            public MiddlewareFunc<DummyContext, Task<FilterFunc<DummyEntity>>> Delegate => Middleware;
 
             public DummyContext ActualContext { get; private set; }
 
-            protected override SequenceFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
+            protected override FilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) {
                 ActualContext = context;
                 cancelled = _cancelled;
 

@@ -8,13 +8,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Inasync.FilterPipelines.Tests {
 
     [TestClass]
-    public class PredicateSequenceFilterTests {
+    public class PredicateFilterComponentTests {
 
         [TestMethod]
         public void Ctor() {
             Action TestCase(int testNumber, SpyPredicateFilterCreator predicateCreator, Type expectedExceptionType = null) => () => {
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => new PredicateSequenceFilter<DummyContext, DummyEntity>(predicateCreator?.Invoke))
+                    .Run(() => new PredicateFilterComponent<DummyContext, DummyEntity>(predicateCreator?.Invoke))
                     .Verify((_, __) => { }, expectedExceptionType);
             };
 
@@ -29,11 +29,11 @@ namespace Inasync.FilterPipelines.Tests {
             var source = new[] { new DummyEntity(), new DummyEntity() };
 
             Action TestCase(int testNumber, SpyPredicateFilterCreator predicateCreator, (DummyEntity[] result, DummyEntity[] nextSource) expected) => () => {
-                var filter = new PredicateSequenceFilter<DummyContext, DummyEntity>(predicateCreator.Invoke);
+                var filter = new PredicateFilterComponent<DummyContext, DummyEntity>(predicateCreator.Invoke);
                 var context = new DummyContext();
 
                 IEnumerable<DummyEntity> actualNextSource = default;
-                Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> next = ctx => Task.FromResult<SequenceFilterFunc<DummyEntity>>(src => {
+                Func<DummyContext, Task<FilterFunc<DummyEntity>>> next = ctx => Task.FromResult<FilterFunc<DummyEntity>>(src => {
                     actualNextSource = src.ToArray();
                     return src;
                 });
@@ -51,20 +51,20 @@ namespace Inasync.FilterPipelines.Tests {
             new[] {
                 TestCase( 0, new SpyPredicateFilterCreator(_ => false)                                           , (new DummyEntity[0], new DummyEntity[0])),
                 TestCase( 1, new SpyPredicateFilterCreator(_ => true )                                           , (source            , source            )),
-                TestCase( 2, new SpyPredicateFilterCreator(PredicateFilter<DummyContext, DummyEntity>.NullFilter), (source            , source            )),
+                TestCase( 2, new SpyPredicateFilterCreator(PredicateComponent<DummyContext, DummyEntity>.NullPredicate), (source            , source            )),
             }.Run();
         }
 
         #region Helpers
 
         private sealed class SpyPredicateFilterCreator {
-            private readonly PredicateFilterFunc<DummyEntity> _predicate;
+            private readonly PredicateFunc<DummyEntity> _predicate;
 
-            public SpyPredicateFilterCreator(PredicateFilterFunc<DummyEntity> predicate) => _predicate = predicate;
+            public SpyPredicateFilterCreator(PredicateFunc<DummyEntity> predicate) => _predicate = predicate;
 
             public DummyContext ActualContext { get; private set; }
 
-            public Func<DummyContext, Task<PredicateFilterFunc<DummyEntity>>> Invoke => context => {
+            public Func<DummyContext, Task<PredicateFunc<DummyEntity>>> Invoke => context => {
                 ActualContext = context;
 
                 return Task.FromResult(_predicate);

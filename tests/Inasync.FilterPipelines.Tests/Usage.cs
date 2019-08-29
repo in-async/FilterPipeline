@@ -9,20 +9,20 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public async Task Usage_Readme() {
-            Func<object, Task<PredicateFilterFunc<int>>> pipeline = FilterPipeline.Build(new MiddlewareFunc<object, Task<PredicateFilterFunc<int>>>[]{
+            Func<object, Task<PredicateFunc<int>>> pipeline = FilterPipeline.Build(new MiddlewareFunc<object, Task<PredicateFunc<int>>>[]{
                 next => async context => {
-                    var nextFunc = await next(context);
-                    return num => (num % 4 == 0) && nextFunc(num);
+                    var nextPredicate = await next(context);
+                    return num => (num % 4 == 0) && nextPredicate(num);
                 },
                 next => async context => {
-                    var nextFunc = await next(context);
-                    return num => (num % 3 == 0) && nextFunc(num);
+                    var nextPredicate = await next(context);
+                    return num => (num % 3 == 0) && nextPredicate(num);
                 },
             });
-            var pipelineFunc = await pipeline(new object());
+            var predicate = await pipeline(new object());
 
-            Assert.AreEqual(true, pipelineFunc(24));
-            Assert.AreEqual(false, pipelineFunc(30));
+            Assert.AreEqual(true, predicate(24));
+            Assert.AreEqual(false, predicate(30));
         }
     }
 }

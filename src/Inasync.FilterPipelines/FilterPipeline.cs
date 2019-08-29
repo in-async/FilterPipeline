@@ -12,37 +12,37 @@ namespace Inasync.FilterPipelines {
     public static class FilterPipeline {
 
         /// <summary>
-        /// <typeparamref name="TEntity"/> の述語処理を行うフィルター パイプラインを構築します。
+        /// <typeparamref name="TEntity"/> の述語パイプラインを構築します。
         /// </summary>
         /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-        /// <typeparam name="TEntity">フィルター処理の対象となる要素の型。</typeparam>
-        /// <param name="middlewares">固有の <see cref="PredicateFilterFunc{TEntity}"/> を作成するミドルウェアのコレクション。要素は常に非 <c>null</c>。</param>
+        /// <typeparam name="TEntity">述語処理の対象となるエンティティの型。</typeparam>
+        /// <param name="middlewares">固有の <see cref="PredicateFunc{TEntity}"/> を作成するミドルウェアのシーケンス。要素は常に非 <c>null</c>。</param>
         /// <returns>
-        /// パイプラインのエントリーポイントとなるデリゲート。常に非 <c>null</c>。
-        /// <paramref name="middlewares"/> が空の場合は、<see cref="PredicateFilter{TContext, TEntity}.NullFilter"/> を返すデリゲートを返します。
+        /// パイプラインのエントリー関数。常に非 <c>null</c>。
+        /// <paramref name="middlewares"/> が空の場合は、<see cref="PredicateComponent{TContext, TEntity}.NullPredicate"/> を返すデリゲートを返します。
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="middlewares"/> is <c>null</c>.</exception>
-        public static Func<TContext, Task<PredicateFilterFunc<TEntity>>> Build<TContext, TEntity>(IEnumerable<MiddlewareFunc<TContext, Task<PredicateFilterFunc<TEntity>>>> middlewares) {
+        public static Func<TContext, Task<PredicateFunc<TEntity>>> Build<TContext, TEntity>(IEnumerable<MiddlewareFunc<TContext, Task<PredicateFunc<TEntity>>>> middlewares) {
             if (middlewares == null) { throw new ArgumentNullException(nameof(middlewares)); }
 
-            return Build(middlewares, handler: _ => Task.FromResult(PredicateFilter<TContext, TEntity>.NullFilter));
+            return Build(middlewares, handler: _ => Task.FromResult(PredicateComponent<TContext, TEntity>.NullPredicate));
         }
 
         /// <summary>
-        /// <typeparamref name="TEntity"/> のシーケンスを処理するフィルター パイプラインを構築します。
+        /// <typeparamref name="TEntity"/> のフィルター パイプラインを構築します。
         /// </summary>
-        /// <typeparam name="TEntity">フィルター処理の対象となる要素の型。</typeparam>
         /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-        /// <param name="middlewares">固有の <see cref="SequenceFilterFunc{TEntity}"/> を作成するミドルウェアのコレクション。要素は常に非 <c>null</c>。</param>
+        /// <typeparam name="TEntity">フィルター処理の対象となるエンティティの型。</typeparam>
+        /// <param name="middlewares">固有の <see cref="FilterFunc{TEntity}"/> を作成するミドルウェアのシーケンス。要素は常に非 <c>null</c>。</param>
         /// <returns>
-        /// パイプラインのエントリーポイントとなるデリゲート。常に非 <c>null</c>。
-        /// <paramref name="middlewares"/> が空の場合は、<see cref="SequenceFilter{TContext, TEntity}.NullFilter"/> を返すデリゲートを返します。
+        /// パイプラインのエントリー関数。常に非 <c>null</c>。
+        /// <paramref name="middlewares"/> が空の場合は、<see cref="FilterComponent{TContext, TEntity}.NullFilter"/> を返すデリゲートを返します。
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="middlewares"/> is <c>null</c>.</exception>
-        public static Func<TContext, Task<SequenceFilterFunc<TEntity>>> Build<TContext, TEntity>(IEnumerable<MiddlewareFunc<TContext, Task<SequenceFilterFunc<TEntity>>>> middlewares) {
+        public static Func<TContext, Task<FilterFunc<TEntity>>> Build<TContext, TEntity>(IEnumerable<MiddlewareFunc<TContext, Task<FilterFunc<TEntity>>>> middlewares) {
             if (middlewares == null) { throw new ArgumentNullException(nameof(middlewares)); }
 
-            return Build(middlewares, handler: _ => Task.FromResult(SequenceFilter<TContext, TEntity>.NullFilter));
+            return Build(middlewares, handler: _ => Task.FromResult(FilterComponent<TContext, TEntity>.NullFilter));
         }
 
         /// <summary>
