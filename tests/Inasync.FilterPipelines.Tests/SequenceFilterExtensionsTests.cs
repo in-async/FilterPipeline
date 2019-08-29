@@ -31,7 +31,7 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private sealed class SpySequenceFilter : ISequenceFilter<DummyEntity, DummyContext> {
+        private sealed class SpySequenceFilter : ISequenceFilter<DummyContext, DummyEntity> {
             private readonly Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> _result;
 
             public SpySequenceFilter(Func<DummyContext, Task<SequenceFilterFunc<DummyEntity>>> result) => _result = result;

@@ -14,7 +14,7 @@ namespace Inasync.FilterPipelines.Tests {
             var source = Rand.Array(_ => new DummyEntity());
 
             new TestCaseRunner()
-                .Run(() => SequenceFilter<DummyEntity, DummyContext>.NullFilter(source))
+                .Run(() => SequenceFilter<DummyContext, DummyEntity>.NullFilter(source))
                 .Verify(source, (Type)null);
         }
 
@@ -147,7 +147,7 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private sealed class SpySequenceFilterToMiddleware : SequenceFilter<DummyEntity, DummyContext> {
+        private sealed class SpySequenceFilterToMiddleware : SequenceFilter<DummyContext, DummyEntity> {
             private readonly SequenceFilterFunc<DummyEntity> _createAsyncResult;
 
             public SpySequenceFilterToMiddleware(SequenceFilterFunc<DummyEntity> createAsyncResult) => _createAsyncResult = createAsyncResult;
@@ -163,7 +163,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private class SpySequenceFilterToCreateAsync : SequenceFilter<DummyEntity, DummyContext> {
+        private class SpySequenceFilterToCreateAsync : SequenceFilter<DummyContext, DummyEntity> {
             private readonly SequenceFilterFunc<DummyEntity> _createResult;
             private readonly bool _cancelled;
 
@@ -186,7 +186,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private sealed class FakeSequenceFilterToCreate : SequenceFilter<DummyEntity, DummyContext> {
+        private sealed class FakeSequenceFilterToCreate : SequenceFilter<DummyContext, DummyEntity> {
 
             public new SequenceFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) => base.Create(context, ref cancelled);
         }

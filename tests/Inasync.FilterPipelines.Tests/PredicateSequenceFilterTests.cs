@@ -14,7 +14,7 @@ namespace Inasync.FilterPipelines.Tests {
         public void Ctor() {
             Action TestCase(int testNumber, SpyPredicateFilterCreator predicateCreator, Type expectedExceptionType = null) => () => {
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => new PredicateSequenceFilter<DummyEntity, DummyContext>(predicateCreator?.Invoke))
+                    .Run(() => new PredicateSequenceFilter<DummyContext, DummyEntity>(predicateCreator?.Invoke))
                     .Verify((_, __) => { }, expectedExceptionType);
             };
 
@@ -29,7 +29,7 @@ namespace Inasync.FilterPipelines.Tests {
             var source = new[] { new DummyEntity(), new DummyEntity() };
 
             Action TestCase(int testNumber, SpyPredicateFilterCreator predicateCreator, (DummyEntity[] result, DummyEntity[] nextSource) expected) => () => {
-                var filter = new PredicateSequenceFilter<DummyEntity, DummyContext>(predicateCreator.Invoke);
+                var filter = new PredicateSequenceFilter<DummyContext, DummyEntity>(predicateCreator.Invoke);
                 var context = new DummyContext();
 
                 IEnumerable<DummyEntity> actualNextSource = default;
@@ -51,7 +51,7 @@ namespace Inasync.FilterPipelines.Tests {
             new[] {
                 TestCase( 0, new SpyPredicateFilterCreator(_ => false)                                           , (new DummyEntity[0], new DummyEntity[0])),
                 TestCase( 1, new SpyPredicateFilterCreator(_ => true )                                           , (source            , source            )),
-                TestCase( 2, new SpyPredicateFilterCreator(PredicateFilter<DummyEntity, DummyContext>.NullFilter), (source            , source            )),
+                TestCase( 2, new SpyPredicateFilterCreator(PredicateFilter<DummyContext, DummyEntity>.NullFilter), (source            , source            )),
             }.Run();
         }
 

@@ -13,7 +13,7 @@ namespace Inasync.FilterPipelines.Tests {
             var entity = new DummyEntity();
 
             new TestCaseRunner()
-                .Run(() => PredicateFilter<DummyEntity, DummyContext>.NullFilter(entity))
+                .Run(() => PredicateFilter<DummyContext, DummyEntity>.NullFilter(entity))
                 .Verify(true, (Type)null);
         }
 
@@ -153,7 +153,7 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private sealed class SpyPredicateFilterToMiddleware : PredicateFilter<DummyEntity, DummyContext> {
+        private sealed class SpyPredicateFilterToMiddleware : PredicateFilter<DummyContext, DummyEntity> {
             private readonly PredicateFilterFunc<DummyEntity> _createAsyncResult;
 
             public SpyPredicateFilterToMiddleware(PredicateFilterFunc<DummyEntity> createAsyncResult) => _createAsyncResult = createAsyncResult;
@@ -169,7 +169,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private sealed class SpyPredicateFilterToCreateAsync : PredicateFilter<DummyEntity, DummyContext> {
+        private sealed class SpyPredicateFilterToCreateAsync : PredicateFilter<DummyContext, DummyEntity> {
             private readonly PredicateFilterFunc<DummyEntity> _createResult;
             private readonly bool _cancelled;
 
@@ -192,7 +192,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private sealed class FakePredicateFilterToCreate : PredicateFilter<DummyEntity, DummyContext> {
+        private sealed class FakePredicateFilterToCreate : PredicateFilter<DummyContext, DummyEntity> {
 
             public new PredicateFilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) => base.Create(context, ref cancelled);
         }
