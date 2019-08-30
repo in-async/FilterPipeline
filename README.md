@@ -12,20 +12,23 @@
 
 ## Usage
 ```cs
-Func<object, Task<PredicateFunc<int>>> pipeline = FilterPipeline.Build(new MiddlewareFunc<object, Task<PredicateFunc<int>>>[]{
+Func<Uri, Task<PredicateFunc<FileInfo>>> pipeline = FilterPipeline.Build(new MiddlewareFunc<Uri, Task<PredicateFunc<FileInfo>>>[]{
     next => async context => {
-        var nextPredicate = await next(context);
-        return num => (num % 4 == 0) && nextPredicate(num);
+        if (!context.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase)) { return _ => false; }
+        return await next(context);
     },
     next => async context => {
         var nextPredicate = await next(context);
-        return num => (num % 3 == 0) && nextPredicate(num);
+        var uriPath = context.AbsolutePath.TrimStart('/');
+        return file => Path.GetFileNameWithoutExtension(file.Name).Equals(uriPath, StringComparison.OrdinalIgnoreCase) && nextPredicate(file);
     },
 });
-var predicate = await pipeline(new object());
 
-Assert.AreEqual(true, predicate(24));
-Assert.AreEqual(false, predicate(30));
+var predicate = await pipeline(new Uri("https://example.com/foo"));
+Assert.AreEqual(true, predicate(new FileInfo("foo.html")));
+Assert.AreEqual(false, predicate(new FileInfo("bar.html")));
+
+Assert.AreEqual(false, (await pipeline(new Uri("http://example.com/foo")))(new FileInfo("foo.html")));
 ```
 
 ## Licence

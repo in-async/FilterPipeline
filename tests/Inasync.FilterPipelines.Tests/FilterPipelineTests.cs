@@ -23,19 +23,19 @@ namespace Inasync.FilterPipelines.Tests {
                 .Run(() => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<PredicateFunc<DummyEntity>>>[0]))
                 .Verify((actual, desc) => {
                     var actualPredicate = actual(new DummyContext()).GetAwaiter().GetResult();
-                    Assert.AreEqual(PredicateComponent<DummyContext, DummyEntity>.NullPredicate, actualPredicate, desc);
+                    Assert.AreEqual(PredicateMiddleware<DummyContext, DummyEntity>.NullPredicate, actualPredicate, desc);
                 }, (Type)null);
         }
 
         [TestMethod]
         public void Build_PredicateFuncs() {
             Action TestCase(int testNumber, (bool result, bool cancelled)[] fBehaviors, (bool result, int[] fIndexes) expected) => () => {
-                var invokedPredicates = new List<SpyPredicateComponent>();
-                var components = fBehaviors.Select(x => new SpyPredicateComponent(invokedPredicates, x.result, x.cancelled)).ToArray();
-                var expectedPredicates = expected.fIndexes.Select(i => components[i]).ToArray();
+                var invokedPredicates = new List<SpyPredicateMiddleware>();
+                var middlewares = fBehaviors.Select(x => new SpyPredicateMiddleware(invokedPredicates, x.result, x.cancelled)).ToArray();
+                var expectedPredicates = expected.fIndexes.Select(i => middlewares[i]).ToArray();
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => FilterPipeline.Build(components.Select(c => c.Delegate)))
+                    .Run(() => FilterPipeline.Build(middlewares.Select(c => c.Delegate)))
                     .Verify((actual, desc) => {
                         var context = new DummyContext();
                         var actualTask = actual(context);
@@ -69,19 +69,19 @@ namespace Inasync.FilterPipelines.Tests {
                 .Run(() => FilterPipeline.Build(new MiddlewareFunc<DummyContext, Task<FilterFunc<DummyEntity>>>[0]))
                 .Verify((actual, desc) => {
                     var actualFilter = actual(new DummyContext()).GetAwaiter().GetResult();
-                    Assert.AreEqual(FilterComponent<DummyContext, DummyEntity>.NullFilter, actualFilter, desc);
+                    Assert.AreEqual(FilterMiddleware<DummyContext, DummyEntity>.NullFilter, actualFilter, desc);
                 }, (Type)null);
         }
 
         [TestMethod]
         public void Build_FilterFuncs() {
             Action TestCase(int testNumber, (DummyEntity[] result, bool cancelled)[] fBehaviors, (DummyEntity[] result, int[] fIndexes) expected) => () => {
-                var invokedFilters = new List<SpyFilterComponent>();
-                var components = fBehaviors.Select(x => new SpyFilterComponent(invokedFilters, x.result, x.cancelled)).ToArray();
-                var expectedFilters = expected.fIndexes.Select(i => components[i]).ToArray();
+                var invokedFilters = new List<SpyFilterMiddleware>();
+                var middlewares = fBehaviors.Select(x => new SpyFilterMiddleware(invokedFilters, x.result, x.cancelled)).ToArray();
+                var expectedFilters = expected.fIndexes.Select(i => middlewares[i]).ToArray();
 
                 new TestCaseRunner($"No.{testNumber}")
-                    .Run(() => FilterPipeline.Build(components.Select(c => c.Delegate)))
+                    .Run(() => FilterPipeline.Build(middlewares.Select(c => c.Delegate)))
                     .Verify((actual, desc) => {
                         var context = new DummyContext();
                         var actualTask = actual(context);
@@ -104,18 +104,18 @@ namespace Inasync.FilterPipelines.Tests {
 
         #region Helpers
 
-        private class SpyPredicateComponent : PredicateComponent<DummyContext, DummyEntity> {
-            private readonly List<SpyPredicateComponent> _invokedPredicates;
+        private class SpyPredicateMiddleware : PredicateMiddleware<DummyContext, DummyEntity> {
+            private readonly List<SpyPredicateMiddleware> _invokedPredicates;
             private readonly bool _result;
             private readonly bool _cancelled;
 
-            public SpyPredicateComponent(List<SpyPredicateComponent> invokedPredicates, bool result, bool cancelled) {
+            public SpyPredicateMiddleware(List<SpyPredicateMiddleware> invokedPredicates, bool result, bool cancelled) {
                 _invokedPredicates = invokedPredicates;
                 _result = result;
                 _cancelled = cancelled;
             }
 
-            public MiddlewareFunc<DummyContext, Task<PredicateFunc<DummyEntity>>> Delegate => Middleware;
+            public MiddlewareFunc<DummyContext, Task<PredicateFunc<DummyEntity>>> Delegate => Invoke;
 
             public DummyContext ActualContext { get; private set; }
 
@@ -130,18 +130,18 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private class SpyFilterComponent : FilterComponent<DummyContext, DummyEntity> {
-            private readonly List<SpyFilterComponent> _invokedFilters;
+        private class SpyFilterMiddleware : FilterMiddleware<DummyContext, DummyEntity> {
+            private readonly List<SpyFilterMiddleware> _invokedFilters;
             private readonly DummyEntity[] _result;
             private readonly bool _cancelled;
 
-            public SpyFilterComponent(List<SpyFilterComponent> invokedFilters, DummyEntity[] result, bool cancelled) {
+            public SpyFilterMiddleware(List<SpyFilterMiddleware> invokedFilters, DummyEntity[] result, bool cancelled) {
                 _invokedFilters = invokedFilters;
                 _result = result;
                 _cancelled = cancelled;
             }
 
-            public MiddlewareFunc<DummyContext, Task<FilterFunc<DummyEntity>>> Delegate => Middleware;
+            public MiddlewareFunc<DummyContext, Task<FilterFunc<DummyEntity>>> Delegate => Invoke;
 
             public DummyContext ActualContext { get; private set; }
 

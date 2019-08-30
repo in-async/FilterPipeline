@@ -19,13 +19,13 @@ namespace Inasync.FilterPipelines {
         /// <param name="middlewares">固有の <see cref="PredicateFunc{TEntity}"/> を作成するミドルウェアのシーケンス。要素は常に非 <c>null</c>。</param>
         /// <returns>
         /// パイプラインのエントリー関数。常に非 <c>null</c>。
-        /// <paramref name="middlewares"/> が空の場合は、<see cref="PredicateComponent{TContext, TEntity}.NullPredicate"/> を返すデリゲートを返します。
+        /// <paramref name="middlewares"/> が空の場合は、<see cref="PredicateMiddleware{TContext, TEntity}.NullPredicate"/> を返すデリゲートを返します。
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="middlewares"/> is <c>null</c>.</exception>
         public static Func<TContext, Task<PredicateFunc<TEntity>>> Build<TContext, TEntity>(IEnumerable<MiddlewareFunc<TContext, Task<PredicateFunc<TEntity>>>> middlewares) {
             if (middlewares == null) { throw new ArgumentNullException(nameof(middlewares)); }
 
-            return Build(middlewares, handler: _ => Task.FromResult(PredicateComponent<TContext, TEntity>.NullPredicate));
+            return Build(middlewares, handler: _ => Task.FromResult(PredicateMiddleware<TContext, TEntity>.NullPredicate));
         }
 
         /// <summary>
@@ -36,13 +36,13 @@ namespace Inasync.FilterPipelines {
         /// <param name="middlewares">固有の <see cref="FilterFunc{TEntity}"/> を作成するミドルウェアのシーケンス。要素は常に非 <c>null</c>。</param>
         /// <returns>
         /// パイプラインのエントリー関数。常に非 <c>null</c>。
-        /// <paramref name="middlewares"/> が空の場合は、<see cref="FilterComponent{TContext, TEntity}.NullFilter"/> を返すデリゲートを返します。
+        /// <paramref name="middlewares"/> が空の場合は、<see cref="FilterMiddleware{TContext, TEntity}.NullFilter"/> を返すデリゲートを返します。
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="middlewares"/> is <c>null</c>.</exception>
         public static Func<TContext, Task<FilterFunc<TEntity>>> Build<TContext, TEntity>(IEnumerable<MiddlewareFunc<TContext, Task<FilterFunc<TEntity>>>> middlewares) {
             if (middlewares == null) { throw new ArgumentNullException(nameof(middlewares)); }
 
-            return Build(middlewares, handler: _ => Task.FromResult(FilterComponent<TContext, TEntity>.NullFilter));
+            return Build(middlewares, handler: _ => Task.FromResult(FilterMiddleware<TContext, TEntity>.NullFilter));
         }
 
         /// <summary>

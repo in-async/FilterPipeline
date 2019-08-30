@@ -7,54 +7,54 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Inasync.FilterPipelines.Tests {
 
     [TestClass]
-    public class FilterComponentTests {
+    public class FilterMiddlewareTests {
 
         [TestMethod]
         public void NullFilter() {
             var source = Rand.Array<DummyEntity>();
 
             new TestCaseRunner()
-                .Run(() => FilterComponent<DummyContext, DummyEntity>.NullFilter(source))
+                .Run(() => FilterMiddleware<DummyContext, DummyEntity>.NullFilter(source))
                 .Verify(source, (Type)null);
         }
 
         [TestMethod]
         public void Middleware() {
             FilterFunc<DummyEntity> createAsyncResult = _ => Rand.Array<DummyEntity>();
-            var component = new SpyFilterComponentToMiddleware(createAsyncResult);
+            var middleware = new SpyFilterMiddlewareToMiddleware(createAsyncResult);
             Func<DummyContext, Task<FilterFunc<DummyEntity>>> next = _ => Task.FromResult<FilterFunc<DummyEntity>>(__ => Rand.Array<DummyEntity>());
             var context = new DummyContext();
 
             new TestCaseRunner()
-                .Run(() => component.Middleware(next)(context))
+                .Run(() => middleware.Invoke(next)(context))
                 .Verify((actual, desc) => {
                     Assert.AreEqual(createAsyncResult, actual, desc);
 
-                    Assert.AreEqual(context, component.ActualContext, desc);
-                    Assert.AreEqual(next, component.ActualNext, desc);
+                    Assert.AreEqual(context, middleware.ActualContext, desc);
+                    Assert.AreEqual(next, middleware.ActualNext, desc);
                 }, (Type)null);
         }
 
         [TestMethod]
         public void CreateAsync_Cancelled() {
             FilterFunc<DummyEntity> createResult = _ => Rand.Array<DummyEntity>();
-            var component = new SpyFilterComponentToCreateAsync(createResult, cancelled: true);
+            var middleware = new SpyFilterMiddlewareToCreateAsync(createResult, cancelled: true);
             var context = new DummyContext();
             Func<DummyContext, Task<FilterFunc<DummyEntity>>> next = _ => throw new AssertFailedException("next は呼ばれてはいけません。");
 
             new TestCaseRunner()
-                .Run(() => component.CreateAsync(context, next))
+                .Run(() => middleware.CreateAsync(context, next))
                 .Verify((actual, desc) => {
                     Assert.AreEqual(createResult, actual, desc);
 
-                    Assert.AreEqual(context, component.ActualContext, desc);
-                    Assert.AreEqual(false, component.ActualCancelled, desc);
+                    Assert.AreEqual(context, middleware.ActualContext, desc);
+                    Assert.AreEqual(false, middleware.ActualCancelled, desc);
                 }, (Type)null);
         }
 
         [TestMethod]
         public void CreateAsync_NullFilter() {
-            var component = new SpyFilterComponentToCreateAsync(createResult: SpyFilterComponentToCreateAsync.NullFilter, cancelled: false);
+            var middleware = new SpyFilterMiddlewareToCreateAsync(createResult: SpyFilterMiddlewareToCreateAsync.NullFilter, cancelled: false);
             var context = new DummyContext();
 
             FilterFunc<DummyEntity> nextFilter = _ => Rand.Array<DummyEntity>();
@@ -65,12 +65,12 @@ namespace Inasync.FilterPipelines.Tests {
             };
 
             new TestCaseRunner()
-                .Run(() => component.CreateAsync(context, next))
+                .Run(() => middleware.CreateAsync(context, next))
                 .Verify((actual, desc) => {
                     Assert.AreEqual(nextFilter, actual, desc);
 
-                    Assert.AreEqual(context, component.ActualContext, desc);
-                    Assert.AreEqual(false, component.ActualCancelled, desc);
+                    Assert.AreEqual(context, middleware.ActualContext, desc);
+                    Assert.AreEqual(false, middleware.ActualCancelled, desc);
                     Assert.AreEqual(context, actualNextContext, desc);
                 }, (Type)null);
         }
@@ -78,22 +78,22 @@ namespace Inasync.FilterPipelines.Tests {
         [TestMethod]
         public void CreateAsync_NullNextFunc() {
             FilterFunc<DummyEntity> createResult = _ => Rand.Array<DummyEntity>();
-            var component = new SpyFilterComponentToCreateAsync(createResult, cancelled: false);
+            var middleware = new SpyFilterMiddlewareToCreateAsync(createResult, cancelled: false);
             var context = new DummyContext();
 
             DummyContext actualNextContext = default;
             Func<DummyContext, Task<FilterFunc<DummyEntity>>> next = ctx => {
                 actualNextContext = ctx;
-                return Task.FromResult(SpyFilterComponentToCreateAsync.NullFilter);
+                return Task.FromResult(SpyFilterMiddlewareToCreateAsync.NullFilter);
             };
 
             new TestCaseRunner()
-                .Run(() => component.CreateAsync(context, next))
+                .Run(() => middleware.CreateAsync(context, next))
                 .Verify((actual, desc) => {
                     Assert.AreEqual(createResult, actual, desc);
 
-                    Assert.AreEqual(context, component.ActualContext, desc);
-                    Assert.AreEqual(false, component.ActualCancelled, desc);
+                    Assert.AreEqual(context, middleware.ActualContext, desc);
+                    Assert.AreEqual(false, middleware.ActualCancelled, desc);
                     Assert.AreEqual(context, actualNextContext, desc);
                 }, (Type)null);
         }
@@ -102,7 +102,7 @@ namespace Inasync.FilterPipelines.Tests {
         public void CreateAsync_Abyss() {
             var createResult = Rand.Array<DummyEntity>();
             IEnumerable<DummyEntity> actualSource = default;
-            var component = new SpyFilterComponentToCreateAsync(src => {
+            var middleware = new SpyFilterMiddlewareToCreateAsync(src => {
                 actualSource = src;
                 return createResult;
             }, cancelled: false);
@@ -122,12 +122,12 @@ namespace Inasync.FilterPipelines.Tests {
             var source = new[] { new DummyEntity(), new DummyEntity() };
 
             new TestCaseRunner()
-                .Run(async () => (await component.CreateAsync(context, next))(source))
+                .Run(async () => (await middleware.CreateAsync(context, next))(source))
                 .Verify((actual, desc) => {
                     Assert.AreEqual(nextResult, actual, desc);
 
-                    Assert.AreEqual(context, component.ActualContext, desc);
-                    Assert.AreEqual(false, component.ActualCancelled, desc);
+                    Assert.AreEqual(context, middleware.ActualContext, desc);
+                    Assert.AreEqual(false, middleware.ActualCancelled, desc);
                     Assert.AreEqual(source, actualSource, desc);
                     Assert.AreEqual(context, actualNextContext, desc);
                     Assert.AreEqual(createResult, actualNextSource, desc);
@@ -136,21 +136,21 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public void Create() {
-            var component = new FakeFilterComponentToCreate();
+            var middleware = new FakeFilterMiddlewareToCreate();
             var context = new DummyContext();
             var cancelled = Rand.Bool();
 
             new TestCaseRunner()
-                .Run(() => component.Create(context, ref cancelled))
-                .Verify(FakeFilterComponentToCreate.NullFilter, (Type)null);
+                .Run(() => middleware.Create(context, ref cancelled))
+                .Verify(FakeFilterMiddlewareToCreate.NullFilter, (Type)null);
         }
 
         #region Helpers
 
-        private sealed class SpyFilterComponentToMiddleware : FilterComponent<DummyContext, DummyEntity> {
+        private sealed class SpyFilterMiddlewareToMiddleware : FilterMiddleware<DummyContext, DummyEntity> {
             private readonly FilterFunc<DummyEntity> _createAsyncResult;
 
-            public SpyFilterComponentToMiddleware(FilterFunc<DummyEntity> createAsyncResult) => _createAsyncResult = createAsyncResult;
+            public SpyFilterMiddlewareToMiddleware(FilterFunc<DummyEntity> createAsyncResult) => _createAsyncResult = createAsyncResult;
 
             public DummyContext ActualContext { get; private set; }
             public Func<DummyContext, Task<FilterFunc<DummyEntity>>> ActualNext { get; private set; }
@@ -163,11 +163,11 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private class SpyFilterComponentToCreateAsync : FilterComponent<DummyContext, DummyEntity> {
+        private class SpyFilterMiddlewareToCreateAsync : FilterMiddleware<DummyContext, DummyEntity> {
             private readonly FilterFunc<DummyEntity> _createResult;
             private readonly bool _cancelled;
 
-            public SpyFilterComponentToCreateAsync(FilterFunc<DummyEntity> createResult, bool cancelled) {
+            public SpyFilterMiddlewareToCreateAsync(FilterFunc<DummyEntity> createResult, bool cancelled) {
                 _createResult = createResult;
                 _cancelled = cancelled;
             }
@@ -186,7 +186,7 @@ namespace Inasync.FilterPipelines.Tests {
             }
         }
 
-        private sealed class FakeFilterComponentToCreate : FilterComponent<DummyContext, DummyEntity> {
+        private sealed class FakeFilterMiddlewareToCreate : FilterMiddleware<DummyContext, DummyEntity> {
 
             public new FilterFunc<DummyEntity> Create(DummyContext context, ref bool cancelled) => base.Create(context, ref cancelled);
         }

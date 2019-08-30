@@ -6,39 +6,11 @@ using System.Threading.Tasks;
 namespace Inasync.FilterPipelines {
 
     /// <summary>
-    /// パイプラインを構成するフィルターコンポーネントのインターフェース。
+    /// パイプラインを構成するフィルター ミドルウェアのインターフェース。
     /// </summary>
     /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
     /// <typeparam name="TEntity">フィルター処理の対象となるエンティティの型。</typeparam>
-    public interface IFilterComponent<TContext, TEntity> {
-
-        /// <summary>
-        /// コンポーネントで定義されている処理を組み込んだ新しいパイプライン関数を作成します。
-        /// </summary>
-        /// <param name="next">パイプラインの後続のコンポーネントを表すデリゲート。常に非 <c>null</c>。呼ばない事により残りのコンポーネントをショートサーキットできます。</param>
-        /// <returns>コンポーネントの処理を組み込んだ新しいパイプライン関数。常に非 <c>null</c>。</returns>
-        Func<TContext, Task<FilterFunc<TEntity>>> Middleware(Func<TContext, Task<FilterFunc<TEntity>>> next);
-    }
-
-    /// <summary>
-    /// <see cref="IFilterComponent{TContext, TEntity}"/> の拡張クラス。
-    /// </summary>
-    public static class FilterComponentExtensions {
-
-        /// <summary>
-        /// コンポーネントを <see cref="MiddlewareFunc{T, TResult}"/> デリゲートに変換します。
-        /// </summary>
-        /// <typeparam name="TContext">パイプラインの実行時コンテキストの型。</typeparam>
-        /// <typeparam name="TEntity">フィルター処理の対象となる要素の型。</typeparam>
-        /// <param name="component">ミドルウェアに変換する <see cref="IFilterComponent{TContext, TEntity}"/>。</param>
-        /// <returns>コンポーネントから変換された <see cref="MiddlewareFunc{T, TResult}"/> デリゲート。</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="component"/> is <c>null</c>.</exception>
-        public static MiddlewareFunc<TContext, Task<FilterFunc<TEntity>>> ToMiddleware<TContext, TEntity>(this IFilterComponent<TContext, TEntity> component) {
-            if (component == null) { throw new ArgumentNullException(nameof(component)); }
-
-            return new MiddlewareFunc<TContext, Task<FilterFunc<TEntity>>>(component.Middleware);
-        }
-    }
+    public interface IFilterMiddleware<TContext, TEntity> : IMiddleware<TContext, Task<FilterFunc<TEntity>>> { }
 
     /// <summary>
     /// <typeparamref name="TEntity"/> のフィルター デリゲート。
@@ -49,10 +21,10 @@ namespace Inasync.FilterPipelines {
     public delegate IEnumerable<TEntity> FilterFunc<TEntity>(IEnumerable<TEntity> source);
 
     /// <summary>
-    /// <see cref="IFilterComponent{TContext, TEntity}"/> の抽象クラス。
+    /// <see cref="IFilterMiddleware{TContext, TEntity}"/> の抽象クラス。
     /// 既定の実装ではフィルターは <see cref="NullFilter"/> です。
     /// </summary>
-    public abstract class FilterComponent<TContext, TEntity> : IFilterComponent<TContext, TEntity> {
+    public abstract class FilterMiddleware<TContext, TEntity> : IFilterMiddleware<TContext, TEntity> {
 
         /// <summary>
         /// シーケンスを素通しするフィルター デリゲート。
@@ -60,10 +32,10 @@ namespace Inasync.FilterPipelines {
         public static readonly FilterFunc<TEntity> NullFilter = source => source;
 
         /// <summary>
-        /// <see cref="IFilterComponent{TContext, TEntity}.Middleware(Func{TContext, Task{FilterFunc{TEntity}}})"/> の実装。
+        /// <see cref="IMiddleware{T, TResult}.Invoke(Func{T, TResult})"/> の実装。
         /// 既定の実装では <see cref="CreateAsync(TContext, Func{TContext, Task{FilterFunc{TEntity}}})"/> に処理を委譲します。
         /// </summary>
-        public Func<TContext, Task<FilterFunc<TEntity>>> Middleware(Func<TContext, Task<FilterFunc<TEntity>>> next) => context => CreateAsync(context, next);
+        public virtual Func<TContext, Task<FilterFunc<TEntity>>> Invoke(Func<TContext, Task<FilterFunc<TEntity>>> next) => context => CreateAsync(context, next);
 
         /// <summary>
         /// <see cref="FilterFunc{TEntity}"/> を作成します。
