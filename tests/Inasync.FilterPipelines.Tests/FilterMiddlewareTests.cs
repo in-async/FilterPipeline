@@ -19,7 +19,7 @@ namespace Inasync.FilterPipelines.Tests {
         }
 
         [TestMethod]
-        public void Middleware() {
+        public void Invoke() {
             FilterFunc<DummyEntity> createAsyncResult = _ => Rand.Array<DummyEntity>();
             var middleware = new SpyFilterMiddlewareToMiddleware(createAsyncResult);
             Func<DummyContext, Task<FilterFunc<DummyEntity>>> next = _ => Task.FromResult<FilterFunc<DummyEntity>>(__ => Rand.Array<DummyEntity>());
@@ -139,10 +139,15 @@ namespace Inasync.FilterPipelines.Tests {
             var middleware = new FakeFilterMiddlewareToCreate();
             var context = new DummyContext();
             var cancelled = Rand.Bool();
+            var expectedCancelled = cancelled;
 
             new TestCaseRunner()
                 .Run(() => middleware.Create(context, ref cancelled))
-                .Verify(FakeFilterMiddlewareToCreate.NullFilter, (Type)null);
+                .Verify((actual, desc) => {
+                    Assert.AreEqual(FakeFilterMiddlewareToCreate.NullFilter, actual, desc);
+
+                    Assert.AreEqual(expectedCancelled, cancelled, desc);
+                }, (Type)null);
         }
 
         #region Helpers

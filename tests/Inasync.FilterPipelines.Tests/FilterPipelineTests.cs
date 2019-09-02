@@ -29,10 +29,10 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public void Build_PredicateFuncs() {
-            Action TestCase(int testNumber, (bool result, bool cancelled)[] fBehaviors, (bool result, int[] fIndexes) expected) => () => {
+            Action TestCase(int testNumber, (bool result, bool cancelled)[] predicates, (bool result, int[] pIndexes) expected) => () => {
                 var invokedPredicates = new List<SpyPredicateMiddleware>();
-                var middlewares = fBehaviors.Select(x => new SpyPredicateMiddleware(invokedPredicates, x.result, x.cancelled)).ToArray();
-                var expectedPredicates = expected.fIndexes.Select(i => middlewares[i]).ToArray();
+                var middlewares = predicates.Select(x => new SpyPredicateMiddleware(invokedPredicates, x.result, x.cancelled)).ToArray();
+                var expectedPredicates = expected.pIndexes.Select(i => middlewares[i]).ToArray();
 
                 new TestCaseRunner($"No.{testNumber}")
                     .Run(() => FilterPipeline.Build(middlewares.Select(c => c.Delegate)))
@@ -49,10 +49,10 @@ namespace Inasync.FilterPipelines.Tests {
             };
 
             new[] {
-                TestCase( 0, fBehaviors:new[]{ (result:true , cancelled:false), (result:true , cancelled:false) }, expected:(result:true , fIndexes:new[]{ 0, 1 })),  // 全て OK.
-                TestCase( 1, fBehaviors:new[]{ (result:true , cancelled:false), (result:false, cancelled:false) }, expected:(result:false, fIndexes:new[]{ 0, 1 })),  // 2つ目 NG.
-                TestCase( 2, fBehaviors:new[]{ (result:true , cancelled:true ), (result:false, cancelled:false) }, expected:(result:true , fIndexes:new[]{ 0    })),  // 1つ目 ショートサーキット.
-                TestCase( 3, fBehaviors:new[]{ (result:false, cancelled:false), (result:true , cancelled:false) }, expected:(result:false, fIndexes:new[]{ 0    })),  // 1つ目 NG.
+                TestCase( 0, predicates:new[]{ (result:true , cancelled:false), (result:true , cancelled:false) }, expected:(result:true , pIndexes:new[]{ 0, 1 })),  // 全て OK.
+                TestCase( 1, predicates:new[]{ (result:true , cancelled:false), (result:false, cancelled:false) }, expected:(result:false, pIndexes:new[]{ 0, 1 })),  // 2つ目 NG.
+                TestCase( 2, predicates:new[]{ (result:true , cancelled:true ), (result:false, cancelled:false) }, expected:(result:true , pIndexes:new[]{ 0    })),  // 1つ目 ショートサーキット.
+                TestCase( 3, predicates:new[]{ (result:false, cancelled:false), (result:true , cancelled:false) }, expected:(result:false, pIndexes:new[]{ 0    })),  // 1つ目 NG.
             }.Run();
         }
 
@@ -75,9 +75,9 @@ namespace Inasync.FilterPipelines.Tests {
 
         [TestMethod]
         public void Build_FilterFuncs() {
-            Action TestCase(int testNumber, (DummyEntity[] result, bool cancelled)[] fBehaviors, (DummyEntity[] result, int[] fIndexes) expected) => () => {
+            Action TestCase(int testNumber, (DummyEntity[] result, bool cancelled)[] filters, (DummyEntity[] result, int[] fIndexes) expected) => () => {
                 var invokedFilters = new List<SpyFilterMiddleware>();
-                var middlewares = fBehaviors.Select(x => new SpyFilterMiddleware(invokedFilters, x.result, x.cancelled)).ToArray();
+                var middlewares = filters.Select(x => new SpyFilterMiddleware(invokedFilters, x.result, x.cancelled)).ToArray();
                 var expectedFilters = expected.fIndexes.Select(i => middlewares[i]).ToArray();
 
                 new TestCaseRunner($"No.{testNumber}")
@@ -96,9 +96,9 @@ namespace Inasync.FilterPipelines.Tests {
             var source = new[] { new DummyEntity() };
             var source2 = new[] { new DummyEntity(), new DummyEntity() };
             new[] {
-                TestCase( 1, fBehaviors:new[]{ (result:source , cancelled:false), (result:source2, cancelled:false) }, expected:(result:source2, fIndexes:new[]{ 0, 1 })),  // 最後のフィルター結果を反映。
-                TestCase( 2, fBehaviors:new[]{ (result:source2, cancelled:false), (result:source , cancelled:false) }, expected:(result:source , fIndexes:new[]{ 0, 1 })),  // 最後のフィルター結果を反映。
-                TestCase( 3, fBehaviors:new[]{ (result:source , cancelled:true ), (result:source2, cancelled:false) }, expected:(result:source , fIndexes:new[]{ 0    })),  // 1つ目 ショートサーキット.
+                TestCase( 1, filters:new[]{ (result:source , cancelled:false), (result:source2, cancelled:false) }, expected:(result:source2, fIndexes:new[]{ 0, 1 })),  // 最後のフィルター結果を反映。
+                TestCase( 2, filters:new[]{ (result:source2, cancelled:false), (result:source , cancelled:false) }, expected:(result:source , fIndexes:new[]{ 0, 1 })),  // 最後のフィルター結果を反映。
+                TestCase( 3, filters:new[]{ (result:source , cancelled:true ), (result:source2, cancelled:false) }, expected:(result:source , fIndexes:new[]{ 0    })),  // 1つ目 ショートサーキット.
             }.Run();
         }
 
